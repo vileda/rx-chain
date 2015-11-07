@@ -42,10 +42,9 @@ public class CreateUserProcess extends ProcessChain {
 				.just(createUserRequest)
 				.flatMap(this::throwIfSpamEmail)
 				.flatMap(this::throwIfForbiddenName)
-				.flatMap(userRequest ->
-						createUserChain(userRequest)
-							.flatMap(user -> sendMail(user)
-									.flatMap(this::success)))
+				.flatMap(this::createUserChain)
+				.flatMap(this::sendMail)
+				.flatMap(this::success)
 				.onErrorResumeNext(throwable -> {
 					setResponse(new ErrorResponse(throwable.getMessage()));
 					return Observable.empty();

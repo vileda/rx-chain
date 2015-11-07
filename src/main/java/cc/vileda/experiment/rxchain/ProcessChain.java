@@ -8,4 +8,8 @@ abstract public class ProcessChain {
 	protected void setResponse(Response response) {
 		this.response = response;
 	}
+
+	protected void setResponse(Object response) {
+		this.response = (Response) response;
+	}
 }
