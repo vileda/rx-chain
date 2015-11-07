@@ -32,7 +32,7 @@ public class CreateUserProcessTest {
 	public void testCreateForbiddenAddress() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
 		TestSubscriber<Address> testSubscriber = new TestSubscriber<>();
-		process.createAddress(new User(), new Address()).subscribe(testSubscriber);
+		process.createAddress(new User(), new Address("", "", "")).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), not(0));
 	}
 

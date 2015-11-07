@@ -9,11 +9,11 @@ public class CreateUserProcess extends ProcessChain {
 	private UserController userController = new UserController();
 	private AddressController addressController = new AddressController();
 
-	public Response run(String name, String email) {
+	public Response run(String name, String email, String city) {
 		CreateUserRequest createUserRequest = new CreateUserRequest(
 				name,
 				email,
-				new Address("", "city1", "12345")
+				new Address("", city, "12345")
 		);
 
 		runCreateUser(createUserRequest);
@@ -21,8 +21,12 @@ public class CreateUserProcess extends ProcessChain {
 		return response;
 	}
 
+	public Response run(String name, String email) {
+		return run(name, email, "city1");
+	}
+
 	public Response run(String name) {
-		return run(name, "user1@example.com");
+		return run(name, "user1@example.com", "city1");
 	}
 
 	Response runCreateUser(List<CreateUserRequest> createUserRequests) {
