@@ -114,23 +114,30 @@ public class CreateUserProcess extends ProcessChain {
 
 	Observable<User> addUserToGroup(User newUser) {
 		return Observable.just(newUser)
-				.flatMap(user -> {
-					if(getAdminGroup(user)) {
-						user.setGroup("admin");
-						System.out.println("adding newUser to group " + user);
-						return Observable.just(user);
-					}
-					return Observable.empty();
-				}).switchIfEmpty(Observable.just(newUser).flatMap(user -> {
-					if(getUserGroup(user)) {
-						user.setGroup("newUser");
-						System.out.println("adding newUser to group " + user);
-						return Observable.just(user);
-					}
-					return Observable.empty();
-				}).switchIfEmpty(Observable.just(newUser).flatMap(user -> {
-					throw new RuntimeException("no group found for newUser");
-				})));
+				.flatMap(this::getAdminGroupObservable)
+				.switchIfEmpty(Observable.just(newUser)
+						.flatMap(this::getUserGroupObservable)
+						.switchIfEmpty(Observable.just(newUser).flatMap(user -> {
+							throw new RuntimeException("no group found for newUser");
+						})));
+	}
+
+	private Observable<? extends User> getUserGroupObservable(User user) {
+		if(getUserGroup(user)) {
+			user.setGroup("newUser");
+			System.out.println("adding newUser to group " + user);
+			return Observable.just(user);
+		}
+		return Observable.empty();
+	}
+
+	private Observable<? extends User> getAdminGroupObservable(User user) {
+		if(getAdminGroup(user)) {
+			user.setGroup("admin");
+			System.out.println("adding newUser to group " + user);
+			return Observable.just(user);
+		}
+		return Observable.empty();
 	}
 
 	Observable<User> sendMail(User newUser) {
