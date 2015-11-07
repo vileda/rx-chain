@@ -20,4 +20,8 @@ public class UserController {
 		log.fine(String.format("adding user %s to group %s", user.getName(), group));
 		return user;
 	}
+
+	public UserStore getStore() {
+		return store;
+	}
 }

@@ -43,6 +43,7 @@ public class CreateUserProcess extends ProcessChain {
 		Observable.just(createUserRequest)
 				.flatMap(this::throwIfSpamEmail)
 				.flatMap(this::throwIfForbiddenName)
+				.flatMap(this::throwIfNameTaken)
 				.flatMap(this::createUserChain)
 				.flatMap(this::sendMail)
 				.flatMap(this::success)
@@ -77,8 +78,21 @@ public class CreateUserProcess extends ProcessChain {
 	public Observable<CreateUserRequest> throwIfForbiddenName(CreateUserRequest createUserRequest) {
 		return Observable.just(createUserRequest)
 				.doOnNext(userRequest -> {
-					if(userRequest.getName() != null && userRequest.getName().contains("vader")) {
+					if(isForbiddenName(userRequest.getName())) {
 						throw new RuntimeException("name not allowed");
+					}
+				});
+	}
+
+	private boolean isForbiddenName(String name) {
+		return name != null && name.contains("vader");
+	}
+
+	public Observable<CreateUserRequest> throwIfNameTaken(CreateUserRequest createUserRequest) {
+		return Observable.just(createUserRequest)
+				.doOnNext(userRequest -> {
+					if(userController.getStore().getUserByName(userRequest.getName()).isPresent()) {
+						throw new RuntimeException("name is taken");
 					}
 				});
 	}
