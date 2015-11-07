@@ -42,11 +42,10 @@ public class CreateUserProcess extends ProcessChain {
 				.just(createUserRequest)
 				.flatMap(this::throwIfSpamEmail)
 				.flatMap(this::throwIfForbiddenName)
-				.flatMap(userRequest -> createUser(userRequest)
-						.flatMap(user -> createAddress(user, userRequest.getAddress())
-								.flatMap(address -> addUserToGroup(user)
-										.flatMap(user1 -> sendMail(user1)
-												.flatMap(this::success)))))
+				.flatMap(userRequest ->
+						createUserChain(userRequest)
+							.flatMap(user -> sendMail(user)
+									.flatMap(this::success)))
 				.onErrorResumeNext(throwable -> {
 					setResponse(new ErrorResponse(throwable.getMessage()));
 					return Observable.empty();
@@ -57,12 +56,12 @@ public class CreateUserProcess extends ProcessChain {
 		return response;
 	}
 
-	Observable<User> createUser(CreateUserRequest createUserRequest) {
+	Observable<User> createUserChain(CreateUserRequest createUserRequest) {
 		return Observable.just(createUserRequest)
-				.flatMap(userRequest -> {
-					//System.out.println("making user " + userRequest);
-					return Observable.just(userController.save(userRequest.getName(), userRequest.getEmail()));
-				});
+			.flatMap(userRequest -> createUser(userRequest)
+				.flatMap(user -> createAddress(user, userRequest.getAddress())
+						.flatMap(ignored -> createUserAccount(user))
+						.flatMap(ignored -> addUserToGroup(user))));
 	}
 
 	Observable<CreateUserRequest> throwIfSpamEmail(CreateUserRequest createUserRequest) {
@@ -83,18 +82,34 @@ public class CreateUserProcess extends ProcessChain {
 				});
 	}
 
+	Observable<User> createUser(CreateUserRequest createUserRequest) {
+		return Observable.just(createUserRequest)
+				.flatMap(userRequest -> {
+					System.out.println("making user " + userRequest);
+					return Observable.just(userController.save(userRequest.getName(), userRequest.getEmail()));
+				});
+	}
+
 	Observable<Address> createAddress(User user, Address userAddress) {
 		return Observable.just(userAddress)
 				.flatMap(address -> {
 					if (addressController.isForbiddenCity(address.getCity())) {
-						//System.out.println("not making address " + address);
+						System.out.println("not making address " + address);
 						throw new RuntimeException("forbidden city");
 					}
 
-					//System.out.println("making address " + address);
+					System.out.println("making address " + address);
 					Address save = addressController.save(address.getCity(), address.getZip());
 					user.setAddress(save);
 					return Observable.just(address);
+				});
+	}
+
+	Observable<Account> createUserAccount(User newUser) {
+		return Observable.just(newUser)
+				.flatMap(user -> {
+					System.out.println("creating account for " + user.getName());
+					return Observable.just(new Account(user.getId()));
 				});
 	}
 
@@ -103,14 +118,14 @@ public class CreateUserProcess extends ProcessChain {
 				.flatMap(user -> {
 					if(getAdminGroup(user)) {
 						user.setGroup("admin");
-						//System.out.println("adding newUser to group " + user);
+						System.out.println("adding newUser to group " + user);
 						return Observable.just(user);
 					}
 					return Observable.empty();
 				}).switchIfEmpty(Observable.just(newUser).flatMap(user -> {
 					if(getUserGroup(user)) {
 						user.setGroup("newUser");
-						//System.out.println("adding newUser to group " + user);
+						System.out.println("adding newUser to group " + user);
 						return Observable.just(user);
 					}
 					return Observable.empty();
@@ -122,7 +137,7 @@ public class CreateUserProcess extends ProcessChain {
 	Observable<User> sendMail(User newUser) {
 		return Observable.just(newUser)
 				.flatMap(user -> {
-					//System.out.println("sending mail to " + user.getEmail());
+					System.out.println("sending mail to " + user.getEmail());
 					return Observable.just(user);
 				});
 	}
