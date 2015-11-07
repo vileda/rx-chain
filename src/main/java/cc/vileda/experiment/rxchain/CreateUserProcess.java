@@ -40,8 +40,7 @@ public class CreateUserProcess extends ProcessChain {
 	}
 
 	Response runCreateUser(CreateUserRequest createUserRequest) {
-		Observable
-				.just(createUserRequest)
+		Observable.just(createUserRequest)
 				.flatMap(this::throwIfSpamEmail)
 				.flatMap(this::throwIfForbiddenName)
 				.flatMap(this::createUserChain)
@@ -87,7 +86,7 @@ public class CreateUserProcess extends ProcessChain {
 	Observable<User> createUser(CreateUserRequest createUserRequest) {
 		return Observable.just(createUserRequest)
 				.map(userRequest -> {
-					log.info("making user " + userRequest);
+					log.fine("making user " + userRequest);
 					return userController.save(userRequest.getName(), userRequest.getEmail());
 				});
 	}
@@ -96,11 +95,11 @@ public class CreateUserProcess extends ProcessChain {
 		return Observable.just(userAddress)
 				.map(address -> {
 					if (addressController.isForbiddenCity(address.getCity())) {
-						log.info("not making address " + address);
+						log.fine("not making address " + address);
 						throw new RuntimeException("forbidden city");
 					}
 
-					log.info("making address " + address);
+					log.fine("making address " + address);
 					Address save = addressController.save(address.getCity(), address.getZip());
 					user.setAddress(save);
 					return address;
@@ -110,35 +109,33 @@ public class CreateUserProcess extends ProcessChain {
 	Observable<Account> createUserAccount(User newUser) {
 		return Observable.just(newUser)
 				.map(user -> {
-					log.info("creating account for " + user.getName());
+					log.fine("creating account for " + user.getName());
 					return new Account(user.getId());
 				});
 	}
 
 	Observable<User> addUserToGroup(User newUser) {
-		return Observable.just(newUser)
-				.flatMap(this::getAdminGroupObservable)
-				.switchIfEmpty(Observable.just(newUser)
-						.flatMap(this::getUserGroupObservable)
-						.switchIfEmpty(Observable.just(newUser).flatMap(user -> {
-							throw new RuntimeException("no group found for newUser");
-						})));
+		return createUserGroupObservable(newUser)
+				.switchIfEmpty(createAdminGroupObservable(newUser)
+					.switchIfEmpty(throwUserError("no group found for newUser")));
 	}
 
-	private Observable<User> getUserGroupObservable(User user) {
-		if(getUserGroup(user)) {
-			user.setGroup("newUser");
-			log.info("adding newUser to group " + user);
-			return Observable.just(user);
+	private Observable<User> throwUserError(String s) {
+		return Observable.just(s).flatMap(s1 -> {
+			throw new RuntimeException(s1);
+		});
+	}
+
+	private Observable<User> createUserGroupObservable(User user) {
+		if(getUserGroupFor(user)) {
+			return Observable.just(userController.setGroup(user, "user"));
 		}
 		return Observable.empty();
 	}
 
-	private Observable<User> getAdminGroupObservable(User user) {
-		if(getAdminGroup(user)) {
-			user.setGroup("admin");
-			log.info("adding newUser to group " + user);
-			return Observable.just(user);
+	private Observable<User> createAdminGroupObservable(User user) {
+		if(getAdminGroupFor(user)) {
+			return Observable.just(userController.setGroup(user, "admin"));
 		}
 		return Observable.empty();
 	}
@@ -146,7 +143,7 @@ public class CreateUserProcess extends ProcessChain {
 	Observable<User> sendMail(User newUser) {
 		return Observable.just(newUser)
 				.map(user -> {
-					log.info("sending mail to " + user.getEmail());
+					log.fine("sending mail to " + user.getEmail());
 					return user;
 				});
 	}
@@ -156,11 +153,11 @@ public class CreateUserProcess extends ProcessChain {
 				.map(result -> new SuccessResponse(user.getId()));
 	}
 
-	private boolean getUserGroup(User user) {
+	private boolean getUserGroupFor(User user) {
 		return "user".equals(user.getName());
 	}
 
-	private boolean getAdminGroup(User user) {
+	private boolean getAdminGroupFor(User user) {
 		return "admin".equals(user.getName());
 	}
 }

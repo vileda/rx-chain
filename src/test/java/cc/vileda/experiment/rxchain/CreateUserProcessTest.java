@@ -4,6 +4,9 @@ import cc.vileda.experiment.common.*;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.Is.is;
@@ -78,6 +81,16 @@ public class CreateUserProcessTest {
 	}
 
 	@Test
+	public void testRunCreateMultipleUser() throws Exception {
+		CreateUserProcess process = new CreateUserProcess();
+		Response response = process.runCreateUser(Arrays.asList(
+				createUserRequest("admin", "", "city1"), createUserRequest("user", "", "city1")));
+		assertThat(response, instanceOf(SuccessResponse.class));
+		assertNotNull(((SuccessResponse) response).getUserId());
+		assertThat(((SuccessResponse) response).getUserId().length(), is(36));
+	}
+
+	@Test
 	public void testRunCreateCityFailingUser() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
 		CreateUserRequest createUserRequest = createUserRequest("user1@example.com");
@@ -131,12 +144,16 @@ public class CreateUserProcessTest {
 		return createUserRequest("admin", email);
 	}
 
-	private CreateUserRequest createUserRequest(String name, String email) {
+	private CreateUserRequest createUserRequest(String name, String email, String city) {
 		return new CreateUserRequest(
 				name,
 				email,
-				new Address("", "city2", "12345")
+				new Address("", city, "12345")
 		);
+	}
+
+	private CreateUserRequest createUserRequest(String name, String email) {
+		return createUserRequest(name, email, "city2");
 	}
 
 	private User createUser(String name, String email) {
