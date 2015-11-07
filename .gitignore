@@ -9,6 +9,7 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 ### Java template
+/.vertx
 *.class
 
 # Mobile Tools for Java (J2ME)

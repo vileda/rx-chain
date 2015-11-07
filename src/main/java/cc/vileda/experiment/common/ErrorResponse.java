@@ -1,10 +1,12 @@
 package cc.vileda.experiment.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
-@Data
-@AllArgsConstructor
-public class ErrorResponse implements Response {
-	private String message;
+@Value
+@EqualsAndHashCode(callSuper = true)
+public class ErrorResponse extends Response {
+	public ErrorResponse(String message) {
+		super(500, message);
+	}
 }

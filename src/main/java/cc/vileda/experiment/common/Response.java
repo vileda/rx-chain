@@ -1,4 +1,11 @@
 package cc.vileda.experiment.common;
 
-public interface Response {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
+public class Response {
+	protected int status;
+	protected String message;
 }

@@ -84,8 +84,8 @@ public class CreateUserProcessTest {
 
 		Response response = process.run("admin");
 		assertThat(response, instanceOf(SuccessResponse.class));
-		assertNotNull(((SuccessResponse) response).getUserId());
-		assertThat(((SuccessResponse) response).getUserId().length(), is(36));
+		assertNotNull(((UserCreatedResponse) response).getUserId());
+		assertThat(((UserCreatedResponse) response).getUserId().length(), is(36));
 	}
 
 	@Test
@@ -95,8 +95,8 @@ public class CreateUserProcessTest {
 		Response response = process.runCreateUser(Arrays.asList(
 				createUserRequest("admin", "", "city1"), createUserRequest("user", "", "city1")));
 		assertThat(response, instanceOf(SuccessResponse.class));
-		assertNotNull(((SuccessResponse) response).getUserId());
-		assertThat(((SuccessResponse) response).getUserId().length(), is(36));
+		assertNotNull(((UserCreatedResponse) response).getUserId());
+		assertThat(((UserCreatedResponse) response).getUserId().length(), is(36));
 	}
 
 	@Test
@@ -122,7 +122,7 @@ public class CreateUserProcessTest {
 
 		Response response = process.run("anon", "foo@trashmail.com");
 		assertThat(response, instanceOf(ErrorResponse.class));
-		assertThat(((ErrorResponse)response).getMessage(), containsString("email"));
+		assertThat(response.getMessage(), containsString("email"));
 	}
 
 	@Test
@@ -156,6 +156,16 @@ public class CreateUserProcessTest {
 	}
 
 	@Test
+	public void testDoNotThrowIfAllowedName() throws Exception {
+		CreateUserProcess process = new CreateUserProcess();
+		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
+
+		CreateUserRequest createUserRequest = createUserRequest("admin", "foo@bar.cc");
+		process.throwIfForbiddenName(createUserRequest).subscribe(testSubscriber);
+		assertThat(testSubscriber.getOnErrorEvents().size(), is(0));
+	}
+
+	@Test
 	public void testThrowIfNameTaken() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
 		process.run("admin");
@@ -165,6 +175,16 @@ public class CreateUserProcessTest {
 		CreateUserRequest createUserRequest = createUserRequest("admin", "foo@bar.cc");
 		process.throwIfNameTaken(createUserRequest).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), not(0));
+	}
+
+	@Test
+	public void testDoNotThrowIfNameNotTaken() throws Exception {
+		CreateUserProcess process = new CreateUserProcess();
+		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
+
+		CreateUserRequest createUserRequest = createUserRequest("admin", "foo@bar.cc");
+		process.throwIfNameTaken(createUserRequest).subscribe(testSubscriber);
+		assertThat(testSubscriber.getOnErrorEvents().size(), is(0));
 	}
 
 	private CreateUserRequest createUserRequest(String email) {

@@ -40,22 +40,24 @@ public class CreateUserProcess extends ProcessChain {
 	}
 
 	Response runCreateUser(CreateUserRequest createUserRequest) {
-		Observable.just(createUserRequest)
-				.flatMap(this::throwIfSpamEmail)
-				.flatMap(this::throwIfForbiddenName)
-				.flatMap(this::throwIfNameTaken)
+		runCreateUserObservable(createUserRequest)
+				.subscribe(this::setResponse);
+
+		return response;
+	}
+
+	Observable<Response> runCreateUserObservable(CreateUserRequest createUserRequest) {
+		return throwIfSpamEmail(createUserRequest)
+				.doOnNext(this::throwIfForbiddenName)
+				.doOnNext(this::throwIfNameTaken)
 				.flatMap(this::createUserChain)
-				.flatMap(this::sendMail)
+				.doOnNext(this::sendMail)
 				.flatMap(this::success)
 				.onErrorResumeNext(throwable -> {
 					setResponse(new ErrorResponse(throwable.getMessage()));
 					log.warning(throwable.getMessage());
 					return Observable.empty();
-				})
-				.subscribe(this::setResponse)
-		;
-
-		return response;
+				});
 	}
 
 	Observable<User> createUserChain(CreateUserRequest createUserRequest) {
@@ -68,19 +70,21 @@ public class CreateUserProcess extends ProcessChain {
 
 	Observable<CreateUserRequest> throwIfSpamEmail(CreateUserRequest createUserRequest) {
 		return Observable.just(createUserRequest)
-				.doOnNext(userRequest -> {
+				.flatMap(userRequest -> {
 					if(userRequest.getEmail() != null && userRequest.getEmail().contains("trashmail")) {
-						throw new RuntimeException("email not allowed");
+						return Observable.error(new RuntimeException("email not allowed"));
 					}
+					return Observable.just(userRequest);
 				});
 	}
 
 	public Observable<CreateUserRequest> throwIfForbiddenName(CreateUserRequest createUserRequest) {
 		return Observable.just(createUserRequest)
-				.doOnNext(userRequest -> {
+				.flatMap(userRequest -> {
 					if(isForbiddenName(userRequest.getName())) {
-						throw new RuntimeException("name not allowed");
+						return Observable.error(new RuntimeException("name not allowed"));
 					}
+					return Observable.just(userRequest);
 				});
 	}
 
@@ -90,10 +94,11 @@ public class CreateUserProcess extends ProcessChain {
 
 	public Observable<CreateUserRequest> throwIfNameTaken(CreateUserRequest createUserRequest) {
 		return Observable.just(createUserRequest)
-				.doOnNext(userRequest -> {
+				.flatMap(userRequest -> {
 					if(userController.getStore().getUserByName(userRequest.getName()).isPresent()) {
-						throw new RuntimeException("name is taken");
+						return Observable.error(new RuntimeException("name is taken"));
 					}
+					return Observable.just(userRequest);
 				});
 	}
 
@@ -107,16 +112,16 @@ public class CreateUserProcess extends ProcessChain {
 
 	Observable<Address> createAddress(User user, Address userAddress) {
 		return Observable.just(userAddress)
-				.map(address -> {
+				.flatMap(address -> {
 					if (addressController.isForbiddenCity(address.getCity())) {
 						log.fine("not making address " + address);
-						throw new RuntimeException("forbidden city");
+						return Observable.error(new RuntimeException("forbidden city"));
 					}
 
 					log.fine("making address " + address);
 					Address save = addressController.save(address.getCity(), address.getZip());
 					user.setAddress(save);
-					return address;
+					return Observable.just(address);
 				});
 	}
 
@@ -135,9 +140,7 @@ public class CreateUserProcess extends ProcessChain {
 	}
 
 	private Observable<User> throwUserError(String s) {
-		return Observable.just(s).flatMap(s1 -> {
-			throw new RuntimeException(s1);
-		});
+		return Observable.just(s).flatMap(s1 -> Observable.error(new RuntimeException(s1)));
 	}
 
 	private Observable<User> createUserGroupObservable(User user) {
@@ -164,7 +167,7 @@ public class CreateUserProcess extends ProcessChain {
 
 	protected Observable<Response> success(User user) {
 		return Observable.just(user)
-				.map(result -> new SuccessResponse(user.getId()));
+				.map(result -> new UserCreatedResponse(user));
 	}
 
 	private boolean getUserGroupFor(User user) {
