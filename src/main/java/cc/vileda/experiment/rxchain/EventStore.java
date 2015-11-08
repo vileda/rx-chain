@@ -1,7 +1,6 @@
 package cc.vileda.experiment.rxchain;
 
 import io.vertx.core.Handler;
-import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.MultiMap;
 import io.vertx.rxjava.core.eventbus.EventBus;
@@ -33,7 +32,6 @@ public class EventStore {
 		}
 		else if(event.contains("event")) {
 			eventBus.publish(event, Json.encode(message));
-			return Observable.never();
 		}
 
 		return Observable.never();
@@ -46,9 +44,5 @@ public class EventStore {
 
 	public <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler) {
 		return eventBus.consumer(address, handler);
-	}
-
-	public <T> MessageConsumer<T> consumer(String address) {
-		return eventBus.consumer(address);
 	}
 }
