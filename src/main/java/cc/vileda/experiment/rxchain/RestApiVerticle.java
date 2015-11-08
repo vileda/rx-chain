@@ -3,6 +3,7 @@ package cc.vileda.experiment.rxchain;
 import cc.vileda.experiment.common.Address;
 import cc.vileda.experiment.common.CreateUserRequest;
 import cc.vileda.experiment.common.User;
+import cc.vileda.experiment.common.event.Event;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.eventbus.EventBus;
@@ -12,6 +13,8 @@ import io.vertx.rxjava.ext.web.Router;
 import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import rx.Observable;
+
+import java.util.List;
 
 import static cc.vileda.experiment.common.Globals.CREATE_ADDRESS_COMMAND_ADDRESS;
 import static cc.vileda.experiment.common.Globals.CREATE_USER_COMMAND_ADDRESS;
@@ -25,6 +28,11 @@ public class RestApiVerticle extends AbstractVerticle {
 
 		Router router = Router.router(vertx);
 		router.route().handler(BodyHandler.create());
+
+		router.get("/users").handler(routingContext -> {
+			List<Event<User>> events = eventStore.fetchEventsFor(User.class);
+
+		});
 
 		router.post("/users").handler(routingContext -> {
 			CreateUserRequest createUserRequest = Json.decodeValue(routingContext.getBodyAsString(), CreateUserRequest.class);

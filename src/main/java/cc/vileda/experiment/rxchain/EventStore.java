@@ -1,5 +1,6 @@
 package cc.vileda.experiment.rxchain;
 
+import cc.vileda.experiment.common.event.Event;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.MultiMap;
@@ -8,10 +9,15 @@ import io.vertx.rxjava.core.eventbus.Message;
 import io.vertx.rxjava.core.eventbus.MessageConsumer;
 import rx.Observable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import static cc.vileda.experiment.common.Globals.ERROR_HEADER;
 import static cc.vileda.experiment.common.Globals.HEADER_TRUE;
 
 public class EventStore {
+	private final List<Event> eventList = new ArrayList<>();
 	private final EventBus eventBus;
 
 	public EventStore(EventBus eventBus) {
@@ -19,8 +25,9 @@ public class EventStore {
 	}
 
 	public <T> Observable<T> publish(String event, Object message, Class<T> clazz) {
+		String messageJson = Json.encode(message);
 		if(event.contains("command")) {
-			return eventBus.sendObservable(event, Json.encode(message))
+			return eventBus.sendObservable(event, messageJson)
 					.flatMap(objectMessage -> {
 						String messageBody = (String) objectMessage.body();
 						if(!hasSendError(objectMessage)) {
@@ -31,7 +38,8 @@ public class EventStore {
 					});
 		}
 		else if(event.contains("event")) {
-			eventBus.publish(event, Json.encode(message));
+			eventBus.publish(event, messageJson);
+			eventList.add(new Event<>(clazz, messageJson));
 		}
 
 		return Observable.never();
@@ -44,5 +52,13 @@ public class EventStore {
 
 	public <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler) {
 		return eventBus.consumer(address, handler);
+	}
+
+	public <T> List<Event<T>> fetchEventsFor(Class<T> clazz) {
+		List<Event<T>> events = new ArrayList<>();
+		eventList.stream()
+				.filter(event -> event.getClazz().equals(clazz))
+				.forEach(events::add);
+		return events;
 	}
 }
