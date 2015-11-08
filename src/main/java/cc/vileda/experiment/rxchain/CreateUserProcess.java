@@ -48,8 +48,7 @@ public class CreateUserProcess extends ProcessChain {
 					.subscribe(address -> {
 						eventBus.publish(ADDRESS_CREATED_EVENT_ADDRESS, Json.encode(address));
 						message.reply(Json.encode(address));
-					})
-			;
+					});
 		});
 	}
 

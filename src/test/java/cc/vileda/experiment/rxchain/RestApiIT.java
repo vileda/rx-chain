@@ -3,14 +3,15 @@ package cc.vileda.experiment.rxchain;
 import cc.vileda.experiment.common.Address;
 import cc.vileda.experiment.common.CreateUserRequest;
 import io.vertx.core.json.Json;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.hamcrest.CoreMatchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import sun.misc.IOUtils;
 
 import java.io.IOException;
 
@@ -28,7 +29,7 @@ public class RestApiIT {
 	public void testCreateUser() throws Exception {
 		HttpResponse execute = createUser("user", "foo@fff.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		assertThat(IOUtils.readFully(execute.getEntity().getContent(), -1, false).length, is(36));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("userId"));
 	}
 
 	@Test
@@ -53,7 +54,7 @@ public class RestApiIT {
 	public void testCreateAddress() throws Exception {
 		HttpResponse execute = createAddress("city1");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		assertThat(IOUtils.readFully(execute.getEntity().getContent(), -1, false).length, is(36));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("addressId"));
 	}
 
 	@Test
