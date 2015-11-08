@@ -29,7 +29,7 @@ public class CreateUserProcessTest {
 		CreateUserProcess process = new CreateUserProcess();
 
 		TestSubscriber<Address> testSubscriber = new TestSubscriber<>();
-		process.createAddress(new User(), new Address("", "city1", "")).subscribe(testSubscriber);
+		process.createAddress(new Address("", "city1", "")).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), is(0));
 	}
 
@@ -38,7 +38,7 @@ public class CreateUserProcessTest {
 		CreateUserProcess process = new CreateUserProcess();
 
 		TestSubscriber<Address> testSubscriber = new TestSubscriber<>();
-		process.createAddress(new User(), new Address("", "", "")).subscribe(testSubscriber);
+		process.createAddress(new Address("", "", "")).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), not(0));
 	}
 
@@ -97,15 +97,6 @@ public class CreateUserProcessTest {
 		assertThat(response, instanceOf(SuccessResponse.class));
 		assertNotNull(((UserCreatedResponse) response).getUserId());
 		assertThat(((UserCreatedResponse) response).getUserId().length(), is(36));
-	}
-
-	@Test
-	public void testRunCreateCityFailingUser() throws Exception {
-		CreateUserProcess process = new CreateUserProcess();
-
-		CreateUserRequest createUserRequest = createUserRequest("user1@example.com");
-		Response response = process.runCreateUser(createUserRequest);
-		assertThat(response, instanceOf(ErrorResponse.class));
 	}
 
 	@Test

@@ -1,6 +1,6 @@
 {
-  "name": "anon",
-  "email": "foo@bar.tld",
+  "name": "user",
+  "email": "foo@dawda.tld",
   "address": {
     "city": "city1",
     "zip": "12345"
