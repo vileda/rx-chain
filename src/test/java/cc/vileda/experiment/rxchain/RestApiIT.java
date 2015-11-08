@@ -2,7 +2,7 @@ package cc.vileda.experiment.rxchain;
 
 import cc.vileda.experiment.common.Address;
 import cc.vileda.experiment.common.CreateUserRequest;
-import cc.vileda.experiment.common.Globals;
+import io.vertx.core.VertxOptions;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.Vertx;
 import org.apache.commons.io.IOUtils;
@@ -22,11 +22,18 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 public class RestApiIT {
-	private static Vertx vertx = Vertx.vertx();
-
 	@BeforeClass
-	public static void beforeClass() {
-		new VertxMain().run(vertx);
+	public static void beforeClass() throws InterruptedException {
+		VertxOptions options = new VertxOptions();
+		Vertx.clusteredVertx(options, res -> {
+			if (res.succeeded()) {
+				new RestApiMain().run(res.result());
+				new UserVerticleMain().run(res.result());
+			} else {
+				System.out.println("Failed: " + res.cause());
+			}
+		});
+		Thread.sleep(6000);
 	}
 
 	@Test
