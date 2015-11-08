@@ -24,7 +24,7 @@ public class VertxMain {
 	public void run(Vertx vertx) {
 		EventBus eventBus = vertx.eventBus();
 		EventStore eventStore = new EventStore(eventBus);
-		new CreateUserProcess(eventBus);
+		new CreateUserProcess(eventStore);
 
 		HttpServer server = vertx.createHttpServer();
 

@@ -2,6 +2,7 @@ package cc.vileda.experiment.rxchain;
 
 import cc.vileda.experiment.common.Address;
 import cc.vileda.experiment.common.CreateUserRequest;
+import cc.vileda.experiment.common.Globals;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.Vertx;
 import org.apache.commons.io.IOUtils;
@@ -16,6 +17,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static cc.vileda.experiment.common.Globals.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -38,18 +40,24 @@ public class RestApiIT {
 	public void testCreateUserWithSpamMail() throws Exception {
 		HttpResponse execute = createUser("admin", "foo@trashmail.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(500));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()),
+				CoreMatchers.containsString(ERR_MSG_EMAIL_NOT_ALLOWED));
 	}
 
 	@Test
 	public void testCreateUserWithUnknownName() throws Exception {
 		HttpResponse execute = createUser("anon", "foo@bar.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(500));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()),
+				CoreMatchers.containsString(ERR_MSG_NO_GROUP_FOUND_FOR_USER));
 	}
 
 	@Test
 	public void testCreateUserWithForbiddenName() throws Exception {
 		HttpResponse execute = createUser("vader", "foo@foo.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(500));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()),
+				CoreMatchers.containsString(ERR_MSG_NAME_NOT_ALLOWED));
 	}
 
 	@Test
@@ -63,6 +71,8 @@ public class RestApiIT {
 	public void testCreateForbiddenAddress() throws Exception {
 		HttpResponse execute = createAddress("city2");
 		assertThat(execute.getStatusLine().getStatusCode(), is(500));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()),
+				CoreMatchers.containsString(ERR_MSG_FORBIDDEN_CITY));
 	}
 
 	private HttpResponse createAddress(String city) throws IOException {

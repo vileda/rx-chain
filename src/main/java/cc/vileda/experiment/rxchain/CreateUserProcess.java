@@ -3,7 +3,6 @@ package cc.vileda.experiment.rxchain;
 import cc.vileda.experiment.common.*;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.Json;
-import io.vertx.rxjava.core.eventbus.EventBus;
 import io.vertx.rxjava.core.eventbus.Message;
 import lombok.extern.java.Log;
 import rx.Observable;
@@ -12,12 +11,12 @@ import static cc.vileda.experiment.common.Globals.*;
 
 @Log
 public class CreateUserProcess {
-	private EventBus eventBus;
+	private EventStore eventStore;
 	private UserController userController = new UserController();
 	private AddressController addressController = new AddressController();
 
-	public CreateUserProcess(EventBus eventBus) {
-		this.eventBus = eventBus;
+	public CreateUserProcess(EventStore eventStore) {
+		this.eventStore = eventStore;
 		addCommandHandlers();
 		addEventHandlers();
 	}
@@ -25,33 +24,33 @@ public class CreateUserProcess {
 	public CreateUserProcess() { }
 
 	private void addCommandHandlers() {
-		eventBus.consumer(CREATE_USER_COMMAND_ADDRESS, message -> {
+		eventStore.consumer(CREATE_USER_COMMAND_ADDRESS, message -> {
 			createUserPrechecks(Json.decodeValue((String) message.body(), CreateUserRequest.class))
 					.flatMap(this::createUserChain)
 					.onErrorResumeNext(throwable -> {
 						return publishFailedEvent(CREATING_USER_FAILED_EVENT_ADDRESS, throwable, message);
 					})
 					.subscribe(user -> {
-						eventBus.publish(USER_CREATED_EVENT_ADDRESS, Json.encode(user));
+						eventStore.publish(USER_CREATED_EVENT_ADDRESS, Json.encode(user), User.class);
 						message.reply(Json.encode(user));
 					});
 		});
 
-		eventBus.consumer(CREATE_ADDRESS_COMMAND_ADDRESS, message -> {
+		eventStore.consumer(CREATE_ADDRESS_COMMAND_ADDRESS, message -> {
 			Address newAddress = Json.decodeValue((String) message.body(), Address.class);
 			createAddress(newAddress)
 					.onErrorResumeNext(throwable -> {
 						return publishFailedEvent(CREATING_ADDRESS_FAILED_EVENT_ADDRESS, throwable, message);
 					})
 					.subscribe(address -> {
-						eventBus.publish(ADDRESS_CREATED_EVENT_ADDRESS, Json.encode(address));
+						eventStore.publish(ADDRESS_CREATED_EVENT_ADDRESS, Json.encode(address), Address.class);
 						message.reply(Json.encode(address));
 					});
 		});
 	}
 
 	private Observable publishFailedEvent(String event, Throwable throwable, Message<Object> message) {
-		eventBus.publish(event, throwable.getMessage());
+		eventStore.publish(event, throwable.getMessage(), String.class);
 		DeliveryOptions deliveryOptions = new DeliveryOptions();
 		deliveryOptions.addHeader(ERROR_HEADER, HEADER_TRUE);
 		message.reply(throwable.getMessage(), deliveryOptions);
@@ -59,17 +58,17 @@ public class CreateUserProcess {
 	}
 
 	private void addEventHandlers() {
-		eventBus.consumer(USER_CREATED_EVENT_ADDRESS, message -> {
+		eventStore.consumer(USER_CREATED_EVENT_ADDRESS, message -> {
 			System.out.println("I have received a message: " + message.body());
 		});
-		eventBus.consumer(CREATING_USER_FAILED_EVENT_ADDRESS, message -> {
+		eventStore.consumer(CREATING_USER_FAILED_EVENT_ADDRESS, message -> {
 			System.out.println("I have received a fail message: " + message.body());
 		});
 
-		eventBus.consumer(ADDRESS_CREATED_EVENT_ADDRESS, message -> {
+		eventStore.consumer(ADDRESS_CREATED_EVENT_ADDRESS, message -> {
 			System.out.println("I have received a message: " + message.body());
 		});
-		eventBus.consumer(CREATING_ADDRESS_FAILED_EVENT_ADDRESS, message -> {
+		eventStore.consumer(CREATING_ADDRESS_FAILED_EVENT_ADDRESS, message -> {
 			System.out.println("I have received a fail message: " + message.body());
 		});
 	}
@@ -90,7 +89,7 @@ public class CreateUserProcess {
 		return Observable.just(createUserRequest)
 				.flatMap(userRequest -> {
 					if(userRequest.getEmail() != null && userRequest.getEmail().contains("trashmail")) {
-						return Observable.error(new RuntimeException("email not allowed"));
+						return Observable.error(new RuntimeException(ERR_MSG_EMAIL_NOT_ALLOWED));
 					}
 					return Observable.just(userRequest);
 				});
@@ -100,7 +99,7 @@ public class CreateUserProcess {
 		return Observable.just(createUserRequest)
 				.flatMap(userRequest -> {
 					if(isForbiddenName(userRequest.getName())) {
-						return Observable.error(new RuntimeException("name not allowed"));
+						return Observable.error(new RuntimeException(ERR_MSG_NAME_NOT_ALLOWED));
 					}
 					return Observable.just(userRequest);
 				});
@@ -114,7 +113,7 @@ public class CreateUserProcess {
 		return Observable.just(createUserRequest)
 				.flatMap(userRequest -> {
 					if(userController.getStore().getUserByName(userRequest.getName()).isPresent()) {
-						return Observable.error(new RuntimeException("name is taken"));
+						return Observable.error(new RuntimeException(ERR_MSG_NAME_IS_TAKEN));
 					}
 					return Observable.just(userRequest);
 				});
@@ -133,7 +132,7 @@ public class CreateUserProcess {
 				.flatMap(address -> {
 					if (addressController.isForbiddenCity(address.getCity())) {
 						log.fine("not making address " + address);
-						return Observable.error(new RuntimeException("forbidden city"));
+						return Observable.error(new RuntimeException(ERR_MSG_FORBIDDEN_CITY));
 					}
 
 					log.fine("making address " + address);
@@ -149,7 +148,7 @@ public class CreateUserProcess {
 	Observable<User> addUserToGroup(User newUser) {
 		return createUserGroupObservable(newUser)
 				.switchIfEmpty(createAdminGroupObservable(newUser)
-					.switchIfEmpty(throwUserError("no group found for user " + newUser.getName())));
+					.switchIfEmpty(throwUserError(ERR_MSG_NO_GROUP_FOUND_FOR_USER + newUser.getName())));
 	}
 
 	private Observable<User> throwUserError(String s) {

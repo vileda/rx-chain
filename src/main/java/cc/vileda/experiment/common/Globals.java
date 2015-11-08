@@ -10,4 +10,9 @@ public final class Globals {
 	public static final String CREATING_ADDRESS_FAILED_EVENT_ADDRESS = "event.address.created.failed";
 	public static final String ERROR_HEADER = "error";
 	public static final String HEADER_TRUE = "true";
+	public static final String ERR_MSG_EMAIL_NOT_ALLOWED = "email not allowed";
+	public static final String ERR_MSG_NAME_NOT_ALLOWED = "name not allowed";
+	public static final String ERR_MSG_NAME_IS_TAKEN = "name is taken";
+	public static final String ERR_MSG_FORBIDDEN_CITY = "forbidden city";
+	public static final String ERR_MSG_NO_GROUP_FOUND_FOR_USER = "no group found for user ";
 }
