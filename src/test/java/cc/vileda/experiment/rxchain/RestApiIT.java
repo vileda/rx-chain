@@ -12,6 +12,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import sun.misc.IOUtils;
 
+import java.io.IOException;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -24,46 +26,56 @@ public class RestApiIT {
 
 	@Test
 	public void testCreateUser() throws Exception {
-		HttpClient httpclient = HttpClientBuilder.create().build();
-		HttpPost httpPost = new HttpPost("http://localhost:8080/users");
-		String admin = Json.encode(new CreateUserRequest("admin", "foo@fff.com", null));
-		httpPost.setEntity(new StringEntity(admin));
-		HttpResponse execute = httpclient.execute(httpPost);
+		HttpResponse execute = createUser("user", "foo@fff.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
 		assertThat(IOUtils.readFully(execute.getEntity().getContent(), -1, false).length, is(36));
 	}
 
 	@Test
 	public void testCreateUserWithSpamMail() throws Exception {
-		HttpClient httpclient = HttpClientBuilder.create().build();
-		HttpPost httpPost = new HttpPost("http://localhost:8080/users");
-		String admin = Json.encode(new CreateUserRequest("admin", "foo@trashmail.com", null));
-		httpPost.setEntity(new StringEntity(admin));
-		HttpResponse execute = httpclient.execute(httpPost);
+		HttpResponse execute = createUser("admin", "foo@trashmail.com");
+		assertThat(execute.getStatusLine().getStatusCode(), is(500));
+	}
+
+	@Test
+	public void testCreateUserWithUnknownName() throws Exception {
+		HttpResponse execute = createUser("anon", "foo@bar.com");
+		assertThat(execute.getStatusLine().getStatusCode(), is(500));
+	}
+
+	@Test
+	public void testCreateUserWithForbiddenName() throws Exception {
+		HttpResponse execute = createUser("vader", "foo@foo.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(500));
 	}
 
 	@Test
 	public void testCreateAddress() throws Exception {
-		HttpClient httpclient = HttpClientBuilder.create().build();
-		HttpPost httpPost = new HttpPost("http://localhost:8080/addresses");
-		Address address = new Address("", "city1", "12345");
-		String admin = Json.encode(new CreateUserRequest("admin", "foo@ddd.com", address));
-		httpPost.setEntity(new StringEntity(admin));
-		HttpResponse execute = httpclient.execute(httpPost);
+		HttpResponse execute = createAddress("city1");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
 		assertThat(IOUtils.readFully(execute.getEntity().getContent(), -1, false).length, is(36));
 	}
 
 	@Test
 	public void testCreateForbiddenAddress() throws Exception {
-		HttpClient httpclient = HttpClientBuilder.create().build();
-		HttpPost httpPost = new HttpPost("http://localhost:8080/addresses");
-		Address address = new Address("", "city2", "12345");
-		String admin = Json.encode(new CreateUserRequest("admin", "foo@dsaf.com", address));
-		httpPost.setEntity(new StringEntity(admin));
-		HttpResponse execute = httpclient.execute(httpPost);
+		HttpResponse execute = createAddress("city2");
 		assertThat(execute.getStatusLine().getStatusCode(), is(500));
 	}
 
+	private HttpResponse createAddress(String city) throws IOException {
+		Address address = new Address("", city, "12345");
+		return createByPost("/addresses", new CreateUserRequest("admin", "foo@dsaf.com", address));
+	}
+
+	private HttpResponse createUser(String name, String email) throws IOException {
+		return createByPost("/users", new CreateUserRequest(name, email, null));
+	}
+
+	private HttpResponse createByPost(String path, Object entity) throws IOException {
+		HttpClient httpclient = HttpClientBuilder.create().build();
+		HttpPost httpPost = new HttpPost("http://localhost:8080" + path);
+		String admin = Json.encode(entity);
+		httpPost.setEntity(new StringEntity(admin));
+		return httpclient.execute(httpPost);
+	}
 }
