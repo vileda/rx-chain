@@ -1,15 +1,15 @@
 package cc.vileda.experiment.common.event;
 
 public class Event<T> {
-	private T clazz;
+	private Class<T> clazz;
 	private String payload;
 
-	public Event(T clazz, String payload) {
+	public Event(Class<T> clazz, String payload) {
 		this.clazz = clazz;
 		this.payload = payload;
 	}
 
-	public T getClazz() {
+	public Class<T> getClazz() {
 		return clazz;
 	}
 

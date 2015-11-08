@@ -1,6 +1,7 @@
 package cc.vileda.experiment.rxchain;
 
 import cc.vileda.experiment.common.event.Event;
+import cc.vileda.experiment.common.event.SourcedEvent;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.MultiMap;
@@ -11,7 +12,6 @@ import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static cc.vileda.experiment.common.Globals.ERROR_HEADER;
 import static cc.vileda.experiment.common.Globals.HEADER_TRUE;
@@ -24,7 +24,7 @@ public class EventStore {
 		this.eventBus = eventBus;
 	}
 
-	public <T> Observable<T> publish(String event, Object message, Class<T> clazz) {
+	public <T extends SourcedEvent> Observable<T> publish(String event, Object message, Class<T> clazz) {
 		String messageJson = Json.encode(message);
 		if(event.contains("command")) {
 			return eventBus.sendObservable(event, messageJson)
@@ -54,7 +54,7 @@ public class EventStore {
 		return eventBus.consumer(address, handler);
 	}
 
-	public <T> List<Event<T>> fetchEventsFor(Class<T> clazz) {
+	public <T extends SourcedEvent> List<Event<T>> fetchEventsFor(Class<T> clazz) {
 		List<Event<T>> events = new ArrayList<>();
 		eventList.stream()
 				.filter(event -> event.getClazz().equals(clazz))
