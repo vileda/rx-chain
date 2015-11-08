@@ -79,44 +79,6 @@ public class CreateUserProcessTest {
 	}
 
 	@Test
-	public void testRunCreateUser() throws Exception {
-		CreateUserProcess process = new CreateUserProcess();
-
-		Response response = process.run("admin");
-		assertThat(response, instanceOf(SuccessResponse.class));
-		assertNotNull(((UserCreatedResponse) response).getUserId());
-		assertThat(((UserCreatedResponse) response).getUserId().length(), is(36));
-	}
-
-	@Test
-	public void testRunCreateMultipleUser() throws Exception {
-		CreateUserProcess process = new CreateUserProcess();
-
-		Response response = process.runCreateUser(Arrays.asList(
-				createUserRequest("admin", "", "city1"), createUserRequest("user", "", "city1")));
-		assertThat(response, instanceOf(SuccessResponse.class));
-		assertNotNull(((UserCreatedResponse) response).getUserId());
-		assertThat(((UserCreatedResponse) response).getUserId().length(), is(36));
-	}
-
-	@Test
-	public void testRunCreateUnknownFailingUser() throws Exception {
-		CreateUserProcess process = new CreateUserProcess();
-
-		Response response = process.run("anon");
-		assertThat(response, instanceOf(ErrorResponse.class));
-	}
-
-	@Test
-	public void testRunCreateFailingSpamUser() throws Exception {
-		CreateUserProcess process = new CreateUserProcess();
-
-		Response response = process.run("anon", "foo@trashmail.com");
-		assertThat(response, instanceOf(ErrorResponse.class));
-		assertThat(response.getMessage(), containsString("email"));
-	}
-
-	@Test
 	public void testThrowIfSpamEmail() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
 		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
@@ -159,7 +121,7 @@ public class CreateUserProcessTest {
 	@Test
 	public void testThrowIfNameTaken() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
-		process.run("admin");
+		process.getUserController().save("admin", "foo@bar.tld");
 
 		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
 

@@ -2,18 +2,16 @@ package cc.vileda.experiment.rxchain;
 
 import cc.vileda.experiment.common.*;
 import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.Json;
+import io.vertx.rxjava.core.eventbus.EventBus;
+import io.vertx.rxjava.core.eventbus.Message;
 import lombok.extern.java.Log;
 import rx.Observable;
-
-import java.util.List;
 
 import static cc.vileda.experiment.common.Globals.*;
 
 @Log
-public class CreateUserProcess extends ProcessChain {
+public class CreateUserProcess {
 	private EventBus eventBus;
 	private UserController userController = new UserController();
 	private AddressController addressController = new AddressController();
@@ -74,53 +72,6 @@ public class CreateUserProcess extends ProcessChain {
 		eventBus.consumer(CREATING_ADDRESS_FAILED_EVENT_ADDRESS, message -> {
 			System.out.println("I have received a fail message: " + message.body());
 		});
-	}
-
-	public Response run(String name, String email, String city) {
-		CreateUserRequest createUserRequest = new CreateUserRequest(
-				name,
-				email,
-				new Address("", city, "12345")
-		);
-
-		runCreateUser(createUserRequest);
-
-		return response;
-	}
-
-	public Response run(String name, String email) {
-		return run(name, email, "city1");
-	}
-
-	public Response run(String name) {
-		return run(name, "user1@example.com", "city1");
-	}
-
-	Response runCreateUser(List<CreateUserRequest> createUserRequests) {
-		Observable.from(createUserRequests)
-				.doOnNext(this::runCreateUser)
-				.subscribe();
-
-		return response;
-	}
-
-	Response runCreateUser(CreateUserRequest createUserRequest) {
-		runCreateUserObservable(createUserRequest)
-				.subscribe(this::setResponse);
-
-		return response;
-	}
-
-	Observable<Response> runCreateUserObservable(CreateUserRequest createUserRequest) {
-		return createUserPrechecks(createUserRequest)
-				.flatMap(this::createUserChain)
-				.doOnNext(this::sendMail)
-				.flatMap(this::success)
-				.onErrorResumeNext(throwable -> {
-					setResponse(new ErrorResponse(throwable.getMessage()));
-					log.warning(throwable.getMessage());
-					return Observable.empty();
-				});
 	}
 
 	private Observable<CreateUserRequest> createUserPrechecks(CreateUserRequest createUserRequest) {
@@ -227,16 +178,15 @@ public class CreateUserProcess extends ProcessChain {
 				});
 	}
 
-	protected Observable<Response> success(User user) {
-		return Observable.just(user)
-				.map(result -> new UserCreatedResponse(user));
-	}
-
 	private boolean getUserGroupFor(User user) {
 		return "user".equals(user.getName());
 	}
 
 	private boolean getAdminGroupFor(User user) {
 		return "admin".equals(user.getName());
+	}
+
+	public UserController getUserController() {
+		return userController;
 	}
 }

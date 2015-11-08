@@ -3,6 +3,7 @@ package cc.vileda.experiment.rxchain;
 import cc.vileda.experiment.common.Address;
 import cc.vileda.experiment.common.CreateUserRequest;
 import io.vertx.core.json.Json;
+import io.vertx.rxjava.core.Vertx;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -19,10 +20,11 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 public class RestApiIT {
+	private static Vertx vertx = Vertx.vertx();
 
 	@BeforeClass
 	public static void beforeClass() {
-		new VertxMain().run();
+		new VertxMain().run(vertx);
 	}
 
 	@Test
