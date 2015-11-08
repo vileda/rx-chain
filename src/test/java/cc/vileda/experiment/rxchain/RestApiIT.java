@@ -31,7 +31,7 @@ public class RestApiIT {
 	public void testCreateUser() throws Exception {
 		HttpResponse execute = createUser("user", "foo@fff.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("userId"));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("id"));
 	}
 
 	@Test
@@ -56,7 +56,7 @@ public class RestApiIT {
 	public void testCreateAddress() throws Exception {
 		HttpResponse execute = createAddress("city1");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("addressId"));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("id"));
 	}
 
 	@Test
