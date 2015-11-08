@@ -16,6 +16,10 @@ import static cc.vileda.experiment.common.Globals.*;
 
 public class VertxMain {
 	public static void main(String[] args) {
+		new VertxMain().run();
+	}
+
+	public void run() {
 		Vertx vertx = Vertx.vertx();
 
 		EventBus eventBus = vertx.eventBus();
