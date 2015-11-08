@@ -30,10 +30,30 @@ public class RestApiIT {
 	}
 
 	@Test
-	public void testCreateUser() throws Exception {
+	public void testCreateAddress() throws Exception {
+		HttpResponse execute = createAddress("city1");
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("id"));
+	}
+
+	@Test
+	public void testCreateForbiddenAddress() throws Exception {
+		HttpResponse execute = createAddress("city2");
+		assertThat(execute.getStatusLine().getStatusCode(), is(500));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()),
+				CoreMatchers.containsString(ERR_MSG_FORBIDDEN_CITY));
+	}
+
+	@Test
+	public void testCreateUserAndDuplicate() throws Exception {
 		HttpResponse execute = createUser("user", "foo@fff.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
 		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("id"));
+
+		execute = createUser("user", "foo@fff.com");
+		assertThat(execute.getStatusLine().getStatusCode(), is(500));
+		assertThat(IOUtils.toString(execute.getEntity().getContent()),
+				CoreMatchers.containsString(ERR_MSG_NAME_IS_TAKEN));
 	}
 
 	@Test
@@ -58,21 +78,6 @@ public class RestApiIT {
 		assertThat(execute.getStatusLine().getStatusCode(), is(500));
 		assertThat(IOUtils.toString(execute.getEntity().getContent()),
 				CoreMatchers.containsString(ERR_MSG_NAME_NOT_ALLOWED));
-	}
-
-	@Test
-	public void testCreateAddress() throws Exception {
-		HttpResponse execute = createAddress("city1");
-		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("id"));
-	}
-
-	@Test
-	public void testCreateForbiddenAddress() throws Exception {
-		HttpResponse execute = createAddress("city2");
-		assertThat(execute.getStatusLine().getStatusCode(), is(500));
-		assertThat(IOUtils.toString(execute.getEntity().getContent()),
-				CoreMatchers.containsString(ERR_MSG_FORBIDDEN_CITY));
 	}
 
 	private HttpResponse createAddress(String city) throws IOException {
