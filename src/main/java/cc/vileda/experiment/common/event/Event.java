@@ -4,6 +4,10 @@ public class Event<T> {
 	private Class<T> clazz;
 	private String payload;
 
+	public Event()
+	{
+	}
+
 	public Event(Class<T> clazz, String payload) {
 		this.clazz = clazz;
 		this.payload = payload;

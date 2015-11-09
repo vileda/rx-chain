@@ -1,14 +1,24 @@
 package cc.vileda.experiment.common.command;
 
-import cc.vileda.experiment.common.Address;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class CreateAddressCommand {
-	private String userId;
-	private Address address;
+import static cc.vileda.experiment.common.Globals.CREATE_ADDRESS_COMMAND_ADDRESS;
+
+@Getter
+@Setter
+public class CreateAddressCommand extends Command {
+	private String city;
+	private String zip;
+
+	public CreateAddressCommand()
+	{
+		super(CREATE_ADDRESS_COMMAND_ADDRESS);
+	}
+
+	public CreateAddressCommand(String city, String zip) {
+		super(CREATE_ADDRESS_COMMAND_ADDRESS);
+		this.city = city;
+		this.zip = zip;
+	}
 }

@@ -8,6 +8,7 @@ import io.vertx.rxjava.core.Vertx;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -87,6 +88,13 @@ public class RestApiIT {
 				CoreMatchers.containsString(ERR_MSG_NAME_NOT_ALLOWED));
 	}
 
+	@Test
+	public void testFetchUserEvents() throws Exception {
+		HttpResponse execute = get("/users");
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
+	}
+
 	private HttpResponse createAddress(String city) throws IOException {
 		Address address = new Address("", city, "12345");
 		return createByPost("/addresses", new CreateUserRequest("admin", "foo@dsaf.com", address));
@@ -102,5 +110,11 @@ public class RestApiIT {
 		String admin = Json.encode(entity);
 		httpPost.setEntity(new StringEntity(admin));
 		return httpclient.execute(httpPost);
+	}
+
+	private HttpResponse get(String path) throws IOException {
+		HttpClient httpclient = HttpClientBuilder.create().build();
+		HttpGet httpGet = new HttpGet("http://localhost:8080" + path);
+		return httpclient.execute(httpGet);
 	}
 }

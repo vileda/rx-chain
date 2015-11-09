@@ -1,11 +1,16 @@
 package cc.vileda.experiment.rxchain;
 
 import cc.vileda.experiment.common.*;
+import cc.vileda.experiment.common.command.CreateAddressCommand;
+import cc.vileda.experiment.common.command.CreateUserCommand;
+import cc.vileda.experiment.common.event.*;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.eventbus.Message;
 import lombok.extern.java.Log;
 import rx.Observable;
+
+import javax.print.attribute.standard.JobSheets;
 
 import static cc.vileda.experiment.common.Globals.*;
 
@@ -25,35 +30,37 @@ public class CreateUserProcess {
 
 	private void addCommandHandlers() {
 		eventStore.consumer(CREATE_USER_COMMAND_ADDRESS, message -> {
-			createUserPrechecks(Json.decodeValue((String) message.body(), CreateUserRequest.class))
-					.flatMap(this::createUserChain)
-					.onErrorResumeNext(throwable -> {
-						return publishFailedEvent(CREATING_USER_FAILED_EVENT_ADDRESS, throwable, message);
-					})
-					.subscribe(user -> {
-						eventStore.publish(USER_CREATED_EVENT_ADDRESS, Json.encode(user), User.class);
-						message.reply(Json.encode(user));
-					});
+			createUserPrechecks(Json.decodeValue((String) message.body(), CreateUserCommand.class))
+				.flatMap(this::createUserChain)
+				.onErrorResumeNext(throwable -> {
+					return publishFailedEvent(new CreatingUserFailedEvent(throwable.getMessage()), message);
+				})
+				.subscribe(user -> {
+					final UserCreatedEvent userCreatedEvent = new UserCreatedEvent("");
+					eventStore.publish(userCreatedEvent, UserCreatedEvent.class);
+					message.reply(Json.encode(user));
+				});
 		});
 
 		eventStore.consumer(CREATE_ADDRESS_COMMAND_ADDRESS, message -> {
-			Address newAddress = Json.decodeValue((String) message.body(), Address.class);
+			CreateAddressCommand newAddress = Json.decodeValue((String) message.body(), CreateAddressCommand.class);
 			createAddress(newAddress)
-					.onErrorResumeNext(throwable -> {
-						return publishFailedEvent(CREATING_ADDRESS_FAILED_EVENT_ADDRESS, throwable, message);
-					})
-					.subscribe(address -> {
-						eventStore.publish(ADDRESS_CREATED_EVENT_ADDRESS, Json.encode(address), Address.class);
-						message.reply(Json.encode(address));
-					});
+				.onErrorResumeNext(throwable -> {
+					return publishFailedEvent(new CreatingAddressFailedEvent(throwable.getMessage()), message);
+				})
+				.subscribe(address -> {
+					final AddressCreatedEvent addressCreatedEvent = new AddressCreatedEvent("");
+					eventStore.publish(addressCreatedEvent, AddressCreatedEvent.class);
+					message.reply(Json.encode(address));
+				});
 		});
 	}
 
-	private Observable publishFailedEvent(String event, Throwable throwable, Message<Object> message) {
-		eventStore.publish(event, throwable.getMessage(), String.class);
+	private <T extends FailedEvent> Observable publishFailedEvent(T event, Message<Object> message) {
+		eventStore.publish(event.getAddress(), event);
 		DeliveryOptions deliveryOptions = new DeliveryOptions();
 		deliveryOptions.addHeader(ERROR_HEADER, HEADER_TRUE);
-		message.reply(throwable.getMessage(), deliveryOptions);
+		message.reply(Json.encode(event), deliveryOptions);
 		return Observable.empty();
 	}
 
@@ -73,20 +80,20 @@ public class CreateUserProcess {
 		});
 	}
 
-	private Observable<CreateUserRequest> createUserPrechecks(CreateUserRequest createUserRequest) {
-		return throwIfSpamEmail(createUserRequest)
+	private Observable<CreateUserCommand> createUserPrechecks(CreateUserCommand createUserCommand) {
+		return throwIfSpamEmail(createUserCommand)
 				.flatMap(this::throwIfForbiddenName)
 				.flatMap(this::throwIfNameTaken);
 	}
 
-	Observable<User> createUserChain(CreateUserRequest createUserRequest) {
-		return createUser(createUserRequest)
+	Observable<User> createUserChain(CreateUserCommand createUserCommand) {
+		return createUser(createUserCommand)
 				.flatMap(user -> addUserToGroup(user)
 					.doOnNext(this::createUserAccount));
 	}
 
-	Observable<CreateUserRequest> throwIfSpamEmail(CreateUserRequest createUserRequest) {
-		return Observable.just(createUserRequest)
+	Observable<CreateUserCommand> throwIfSpamEmail(CreateUserCommand createUserCommand) {
+		return Observable.just(createUserCommand)
 				.flatMap(userRequest -> {
 					if(userRequest.getEmail() != null && userRequest.getEmail().contains("trashmail")) {
 						return Observable.error(new RuntimeException(ERR_MSG_EMAIL_NOT_ALLOWED));
@@ -95,8 +102,8 @@ public class CreateUserProcess {
 				});
 	}
 
-	public Observable<CreateUserRequest> throwIfForbiddenName(CreateUserRequest createUserRequest) {
-		return Observable.just(createUserRequest)
+	public Observable<CreateUserCommand> throwIfForbiddenName(CreateUserCommand createUserCommand) {
+		return Observable.just(createUserCommand)
 				.flatMap(userRequest -> {
 					if(isForbiddenName(userRequest.getName())) {
 						return Observable.error(new RuntimeException(ERR_MSG_NAME_NOT_ALLOWED));
@@ -109,8 +116,8 @@ public class CreateUserProcess {
 		return name != null && name.contains("vader");
 	}
 
-	public Observable<CreateUserRequest> throwIfNameTaken(CreateUserRequest createUserRequest) {
-		return Observable.just(createUserRequest)
+	public Observable<CreateUserCommand> throwIfNameTaken(CreateUserCommand createUserCommand) {
+		return Observable.just(createUserCommand)
 				.flatMap(userRequest -> {
 					if(userController.getStore().getUserByName(userRequest.getName()).isPresent()) {
 						return Observable.error(new RuntimeException(ERR_MSG_NAME_IS_TAKEN));
@@ -119,15 +126,15 @@ public class CreateUserProcess {
 				});
 	}
 
-	Observable<User> createUser(CreateUserRequest createUserRequest) {
-		return Observable.just(createUserRequest)
+	Observable<User> createUser(CreateUserCommand createUserCommand) {
+		return Observable.just(createUserCommand)
 				.map(userRequest -> {
 					log.fine("making user " + userRequest);
 					return userController.save(userRequest.getName(), userRequest.getEmail());
 				});
 	}
 
-	Observable<Address> createAddress(Address userAddress) {
+	Observable<Address> createAddress(CreateAddressCommand userAddress) {
 		return Observable.just(userAddress)
 				.flatMap(address -> {
 					if (addressController.isForbiddenCity(address.getCity())) {

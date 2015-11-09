@@ -1,6 +1,8 @@
 package cc.vileda.experiment.rxchain;
 
 import cc.vileda.experiment.common.*;
+import cc.vileda.experiment.common.command.CreateAddressCommand;
+import cc.vileda.experiment.common.command.CreateUserCommand;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
 
@@ -20,7 +22,7 @@ public class CreateUserProcessTest {
 		CreateUserProcess process = new CreateUserProcess();
 
 		TestSubscriber<User> testSubscriber = new TestSubscriber<>();
-		process.createUser(new CreateUserRequest("foo", "bar", null)).subscribe(testSubscriber);
+		process.createUser(new CreateUserCommand("foo", "bar")).subscribe(testSubscriber);
 		testSubscriber.assertNoErrors();
 	}
 
@@ -29,7 +31,7 @@ public class CreateUserProcessTest {
 		CreateUserProcess process = new CreateUserProcess();
 
 		TestSubscriber<Address> testSubscriber = new TestSubscriber<>();
-		process.createAddress(new Address("", "city1", "")).subscribe(testSubscriber);
+		process.createAddress(new CreateAddressCommand("city1", "")).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), is(0));
 	}
 
@@ -38,7 +40,7 @@ public class CreateUserProcessTest {
 		CreateUserProcess process = new CreateUserProcess();
 
 		TestSubscriber<Address> testSubscriber = new TestSubscriber<>();
-		process.createAddress(new Address("", "", "")).subscribe(testSubscriber);
+		process.createAddress(new CreateAddressCommand("", "")).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), not(0));
 	}
 
@@ -81,9 +83,9 @@ public class CreateUserProcessTest {
 	@Test
 	public void testThrowIfSpamEmail() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
-		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
+		TestSubscriber<CreateUserCommand> testSubscriber = new TestSubscriber<>();
 
-		CreateUserRequest createUserRequest = createUserRequest("user1@trashmail.com");
+		CreateUserCommand createUserRequest = createUserRequest("user1@trashmail.com");
 		process.throwIfSpamEmail(createUserRequest).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), not(0));
 	}
@@ -91,9 +93,9 @@ public class CreateUserProcessTest {
 	@Test
 	public void testDoNotThrowIfNotSpamEmail() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
-		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
+		TestSubscriber<CreateUserCommand> testSubscriber = new TestSubscriber<>();
 
-		CreateUserRequest createUserRequest = createUserRequest("user1@example.com");
+		CreateUserCommand createUserRequest = createUserRequest("user1@example.com");
 		process.throwIfSpamEmail(createUserRequest).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), is(0));
 	}
@@ -101,9 +103,9 @@ public class CreateUserProcessTest {
 	@Test
 	public void testThrowIfForbiddenName() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
-		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
+		TestSubscriber<CreateUserCommand> testSubscriber = new TestSubscriber<>();
 
-		CreateUserRequest createUserRequest = createUserRequest("vader", "foo@bar.cc");
+		CreateUserCommand createUserRequest = createUserRequest("vader", "foo@bar.cc");
 		process.throwIfForbiddenName(createUserRequest).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), not(0));
 	}
@@ -111,9 +113,9 @@ public class CreateUserProcessTest {
 	@Test
 	public void testDoNotThrowIfAllowedName() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
-		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
+		TestSubscriber<CreateUserCommand> testSubscriber = new TestSubscriber<>();
 
-		CreateUserRequest createUserRequest = createUserRequest("admin", "foo@bar.cc");
+		CreateUserCommand createUserRequest = createUserRequest("admin", "foo@bar.cc");
 		process.throwIfForbiddenName(createUserRequest).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), is(0));
 	}
@@ -123,9 +125,9 @@ public class CreateUserProcessTest {
 		CreateUserProcess process = new CreateUserProcess();
 		process.getUserController().save("admin", "foo@bar.tld");
 
-		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
+		TestSubscriber<CreateUserCommand> testSubscriber = new TestSubscriber<>();
 
-		CreateUserRequest createUserRequest = createUserRequest("admin", "foo@bar.cc");
+		CreateUserCommand createUserRequest = createUserRequest("admin", "foo@bar.cc");
 		process.throwIfNameTaken(createUserRequest).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), not(0));
 	}
@@ -133,26 +135,25 @@ public class CreateUserProcessTest {
 	@Test
 	public void testDoNotThrowIfNameNotTaken() throws Exception {
 		CreateUserProcess process = new CreateUserProcess();
-		TestSubscriber<CreateUserRequest> testSubscriber = new TestSubscriber<>();
+		TestSubscriber<CreateUserCommand> testSubscriber = new TestSubscriber<>();
 
-		CreateUserRequest createUserRequest = createUserRequest("admin", "foo@bar.cc");
+		CreateUserCommand createUserRequest = createUserRequest("admin", "foo@bar.cc");
 		process.throwIfNameTaken(createUserRequest).subscribe(testSubscriber);
 		assertThat(testSubscriber.getOnErrorEvents().size(), is(0));
 	}
 
-	private CreateUserRequest createUserRequest(String email) {
+	private CreateUserCommand createUserRequest(String email) {
 		return createUserRequest("admin", email);
 	}
 
-	private CreateUserRequest createUserRequest(String name, String email, String city) {
-		return new CreateUserRequest(
+	private CreateUserCommand createUserRequest(String name, String email, String city) {
+		return new CreateUserCommand(
 				name,
-				email,
-				new Address("", city, "12345")
+				email
 		);
 	}
 
-	private CreateUserRequest createUserRequest(String name, String email) {
+	private CreateUserCommand createUserRequest(String name, String email) {
 		return createUserRequest(name, email, "city2");
 	}
 

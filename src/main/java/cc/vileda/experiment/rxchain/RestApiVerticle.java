@@ -3,6 +3,10 @@ package cc.vileda.experiment.rxchain;
 import cc.vileda.experiment.common.Address;
 import cc.vileda.experiment.common.CreateUserRequest;
 import cc.vileda.experiment.common.User;
+import cc.vileda.experiment.common.command.Command;
+import cc.vileda.experiment.common.command.CreateAddressCommand;
+import cc.vileda.experiment.common.command.CreateUserCommand;
+import cc.vileda.experiment.common.event.AddressCreatedEvent;
 import cc.vileda.experiment.common.event.Event;
 import cc.vileda.experiment.common.event.UserCreatedEvent;
 import io.vertx.core.json.Json;
@@ -31,32 +35,38 @@ public class RestApiVerticle extends AbstractVerticle {
 		router.route().handler(BodyHandler.create());
 
 		router.get("/users").handler(routingContext -> {
-			List<Event<UserCreatedEvent>> events = eventStore.fetchEventsFor(UserCreatedEvent.class);
+			List<Event> events = eventStore.getEventList();
 			routingContext.response().end(Json.encode(events));
 		});
 
 		router.post("/users").handler(routingContext -> {
 			CreateUserRequest createUserRequest = Json.decodeValue(routingContext.getBodyAsString(), CreateUserRequest.class);
-			publishCommand(CREATE_USER_COMMAND_ADDRESS, createUserRequest, eventStore, routingContext, User.class);
+			CreateUserCommand command = new CreateUserCommand(createUserRequest.getName(), createUserRequest.getEmail());
+			publishCommand(command, eventStore, routingContext, User.class);
 		});
 
 		router.post("/addresses").handler(routingContext -> {
 			CreateUserRequest createUserRequest = Json.decodeValue(routingContext.getBodyAsString(), CreateUserRequest.class);
 			Address createAddressRequest = createUserRequest.getAddress();
-			publishCommand(CREATE_ADDRESS_COMMAND_ADDRESS, createAddressRequest, eventStore, routingContext, Address.class);
+			CreateAddressCommand createAddressCommand = new CreateAddressCommand();
+			createAddressCommand.setCity(createAddressRequest.getCity());
+			createAddressCommand.setZip(createAddressRequest.getZip());
+			publishCommand(createAddressCommand, eventStore, routingContext, Address.class);
 		});
 
 		server.requestHandler(router::accept).listen(8080);
 	}
 
-	private <T> void publishCommand(String event, Object payload, EventStore eventStore, RoutingContext routingContext, Class<T> clazz) {
+	private <T extends Command, R> void publishCommand(T payload, EventStore eventStore, RoutingContext routingContext, Class<R> clazz) {
 		HttpServerResponse response = routingContext.response();
 
-		eventStore.publish(event, payload, clazz)
+		eventStore.publish(payload, clazz)
 				.onErrorResumeNext(message -> {
 					response.setStatusCode(500).end(message.getMessage());
 					return Observable.empty();
 				})
-				.subscribe(reply -> response.setStatusCode(200).end(Json.encode(reply)));
+				.subscribe(reply -> {
+					response.setStatusCode(200).end(Json.encode(reply));
+				});
 	}
 }
