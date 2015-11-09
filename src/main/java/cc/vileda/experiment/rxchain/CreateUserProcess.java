@@ -93,8 +93,7 @@ public class CreateUserProcess {
 
 	private Observable<CreateUserCommand> createUserPrechecks(CreateUserCommand createUserCommand) {
 		return throwIfSpamEmail(createUserCommand)
-				.flatMap(this::throwIfForbiddenName)
-				.flatMap(this::throwIfNameTaken);
+				.flatMap(this::throwIfForbiddenName);
 	}
 
 	Observable<User> createUserChain(CreateUserCommand createUserCommand) {

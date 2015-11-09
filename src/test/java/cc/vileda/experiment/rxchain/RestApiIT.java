@@ -4,6 +4,8 @@ import cc.vileda.experiment.common.Address;
 import cc.vileda.experiment.common.CreateUserRequest;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava.core.Vertx;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -20,6 +22,7 @@ import java.io.IOException;
 
 import static cc.vileda.experiment.common.Globals.*;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class RestApiIT {
@@ -53,18 +56,6 @@ public class RestApiIT {
 	}
 
 	@Test
-	public void testCreateUserAndDuplicate() throws Exception {
-		HttpResponse execute = createUser("user", "foo@fff.com");
-		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		assertThat(IOUtils.toString(execute.getEntity().getContent()), CoreMatchers.containsString("id"));
-
-		execute = createUser("user", "foo@fff.com");
-		assertThat(execute.getStatusLine().getStatusCode(), is(500));
-		assertThat(IOUtils.toString(execute.getEntity().getContent()),
-				CoreMatchers.containsString(ERR_MSG_NAME_IS_TAKEN));
-	}
-
-	@Test
 	public void testCreateUserWithSpamMail() throws Exception {
 		HttpResponse execute = createUser("admin", "foo@trashmail.com");
 		assertThat(execute.getStatusLine().getStatusCode(), is(500));
@@ -92,29 +83,43 @@ public class RestApiIT {
 	public void testFetchUserEvents() throws Exception {
 		HttpResponse execute = get("/users");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
+		JsonArray array = new JsonArray(IOUtils.toString(execute.getEntity().getContent()));
+		assertNotNull(array);
 	}
 
 	@Test
 	public void testLoadUserAggregate() throws Exception {
-		HttpResponse execute = get("/users/da95e133-6a1c-4b27-a0cd-035c2e31e92f");
+		HttpResponse execute = createUser("user", "foo@fff.com");
+		JsonObject jsonObject = new JsonObject(IOUtils.toString(execute.getEntity().getContent()));
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
+
+		execute = get("/users/"+jsonObject.getString("id"));
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+		jsonObject = new JsonObject(IOUtils.toString(execute.getEntity().getContent()));
+		assertThat(jsonObject.getString("name"), is("user"));
 	}
 
 	@Test
 	public void testChangeUserEmail() throws Exception {
-		HttpResponse execute = get("/users/da95e133-6a1c-4b27-a0cd-035c2e31e92f");
+		HttpResponse execute = createUser("user", "foo@fff.com");
+		JsonObject userJsonObject = new JsonObject(IOUtils.toString(execute.getEntity().getContent()));
+		String id = userJsonObject.getString("id");
+
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+
+		execute = get("/users/"+ id);
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+		userJsonObject = new JsonObject(IOUtils.toString(execute.getEntity().getContent()));
+		assertThat(userJsonObject.getString("name"), is("user"));
+
+		execute = createByPost("/users/"+id+"/email", "foo@barfoo.de");
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
 		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
 
-		execute = createByPost("/users/da95e133-6a1c-4b27-a0cd-035c2e31e92f/email", "foo@barfoo.de");
+		execute = get("/users/"+ id);
 		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
-
-		execute = get("/users/da95e133-6a1c-4b27-a0cd-035c2e31e92f");
-		assertThat(execute.getStatusLine().getStatusCode(), is(200));
-		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
+		userJsonObject = new JsonObject(IOUtils.toString(execute.getEntity().getContent()));
+		assertThat(userJsonObject.getString("email"), is("foo@barfoo.de"));
 	}
 
 	private HttpResponse createAddress(String city) throws IOException {
@@ -136,7 +141,9 @@ public class RestApiIT {
 
 	private HttpResponse get(String path) throws IOException {
 		HttpClient httpclient = HttpClientBuilder.create().build();
-		HttpGet httpGet = new HttpGet("http://localhost:8080" + path);
+		String uri = "http://localhost:8080" + path;
+		HttpGet httpGet = new HttpGet(uri);
+		System.out.println("HTTP fetching " + uri);
 		return httpclient.execute(httpGet);
 	}
 }

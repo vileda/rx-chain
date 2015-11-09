@@ -8,7 +8,7 @@ public class UserVerticle extends AbstractVerticle {
 
 	public void start() {
 		EventBus eventBus = vertx.eventBus();
-		EventStore eventStore = new EventStore(eventBus);
+		EventStore eventStore = new EventStore(vertx, eventBus);
 		createUserProcess = new CreateUserProcess(eventStore);
 	}
 }

@@ -8,9 +8,6 @@ import cc.vileda.experiment.common.command.ChangeUserEmailCommand;
 import cc.vileda.experiment.common.command.Command;
 import cc.vileda.experiment.common.command.CreateAddressCommand;
 import cc.vileda.experiment.common.command.CreateUserCommand;
-import cc.vileda.experiment.common.event.AddressCreatedEvent;
-import cc.vileda.experiment.common.event.Event;
-import cc.vileda.experiment.common.event.UserCreatedEvent;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.eventbus.EventBus;
@@ -21,15 +18,10 @@ import io.vertx.rxjava.ext.web.RoutingContext;
 import io.vertx.rxjava.ext.web.handler.BodyHandler;
 import rx.Observable;
 
-import java.util.List;
-
-import static cc.vileda.experiment.common.Globals.CREATE_ADDRESS_COMMAND_ADDRESS;
-import static cc.vileda.experiment.common.Globals.CREATE_USER_COMMAND_ADDRESS;
-
 public class RestApiVerticle extends AbstractVerticle {
 	public void start() {
 		EventBus eventBus = vertx.eventBus();
-		EventStore eventStore = new EventStore(eventBus);
+		EventStore eventStore = new EventStore(vertx, eventBus);
 
 		HttpServer server = vertx.createHttpServer();
 
@@ -37,20 +29,23 @@ public class RestApiVerticle extends AbstractVerticle {
 		router.route().handler(BodyHandler.create());
 
 		router.get("/users").handler(routingContext -> {
-			List<Event> events = eventStore.getEventList();
-			routingContext.response().end(Json.encode(events));
+			eventStore.getPersistableEventList().subscribe(persistableEvents -> {
+				routingContext.response().end(Json.encode(persistableEvents));
+			});
 		});
 
 		router.get("/users/:id").handler(routingContext -> {
 			final String id = routingContext.request().getParam("id");
-			UserAggregate user = eventStore.load(id, UserAggregate.class);
-			routingContext.response().end(Json.encode(user));
+			eventStore.load(id, UserAggregate.class)
+				.subscribe(user -> {
+					routingContext.response().end(Json.encode(user));
+				});
 		});
 
 		router.post("/users/:id/email").handler(routingContext -> {
 			final String id = routingContext.request().getParam("id");
 			String newEmail = routingContext.getBodyAsString();
-			ChangeUserEmailCommand command = new ChangeUserEmailCommand(id, newEmail);
+			ChangeUserEmailCommand command = new ChangeUserEmailCommand(id, Json.decodeValue(newEmail, String.class));
 			publishCommand(command, eventStore, routingContext, String.class);
 		});
 
