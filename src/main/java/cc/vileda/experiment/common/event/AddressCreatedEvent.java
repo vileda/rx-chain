@@ -6,9 +6,11 @@ import static cc.vileda.experiment.common.Globals.ADDRESS_CREATED_EVENT_ADDRESS;
 
 @Getter
 public class AddressCreatedEvent extends SourcedEvent {
-	private final String addressId;
-	public AddressCreatedEvent(String addressId) {
-		super(ADDRESS_CREATED_EVENT_ADDRESS);
-		this.addressId = addressId;
+	public AddressCreatedEvent() {
+		super(ADDRESS_CREATED_EVENT_ADDRESS, null);
+	}
+
+	public AddressCreatedEvent(String id) {
+		super(ADDRESS_CREATED_EVENT_ADDRESS, id);
 	}
 }

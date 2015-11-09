@@ -3,6 +3,8 @@ package cc.vileda.experiment.rxchain;
 import cc.vileda.experiment.common.Address;
 import cc.vileda.experiment.common.CreateUserRequest;
 import cc.vileda.experiment.common.User;
+import cc.vileda.experiment.common.aggregate.UserAggregate;
+import cc.vileda.experiment.common.command.ChangeUserEmailCommand;
 import cc.vileda.experiment.common.command.Command;
 import cc.vileda.experiment.common.command.CreateAddressCommand;
 import cc.vileda.experiment.common.command.CreateUserCommand;
@@ -37,6 +39,19 @@ public class RestApiVerticle extends AbstractVerticle {
 		router.get("/users").handler(routingContext -> {
 			List<Event> events = eventStore.getEventList();
 			routingContext.response().end(Json.encode(events));
+		});
+
+		router.get("/users/:id").handler(routingContext -> {
+			final String id = routingContext.request().getParam("id");
+			UserAggregate user = eventStore.load(id, UserAggregate.class);
+			routingContext.response().end(Json.encode(user));
+		});
+
+		router.post("/users/:id/email").handler(routingContext -> {
+			final String id = routingContext.request().getParam("id");
+			String newEmail = routingContext.getBodyAsString();
+			ChangeUserEmailCommand command = new ChangeUserEmailCommand(id, newEmail);
+			publishCommand(command, eventStore, routingContext, String.class);
 		});
 
 		router.post("/users").handler(routingContext -> {

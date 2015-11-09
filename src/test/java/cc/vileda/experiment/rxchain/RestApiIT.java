@@ -95,6 +95,28 @@ public class RestApiIT {
 		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
 	}
 
+	@Test
+	public void testLoadUserAggregate() throws Exception {
+		HttpResponse execute = get("/users/da95e133-6a1c-4b27-a0cd-035c2e31e92f");
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
+	}
+
+	@Test
+	public void testChangeUserEmail() throws Exception {
+		HttpResponse execute = get("/users/da95e133-6a1c-4b27-a0cd-035c2e31e92f");
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
+
+		execute = createByPost("/users/da95e133-6a1c-4b27-a0cd-035c2e31e92f/email", "foo@barfoo.de");
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
+
+		execute = get("/users/da95e133-6a1c-4b27-a0cd-035c2e31e92f");
+		assertThat(execute.getStatusLine().getStatusCode(), is(200));
+		System.out.println(IOUtils.toString(execute.getEntity().getContent()));
+	}
+
 	private HttpResponse createAddress(String city) throws IOException {
 		Address address = new Address("", city, "12345");
 		return createByPost("/addresses", new CreateUserRequest("admin", "foo@dsaf.com", address));

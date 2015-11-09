@@ -1,5 +1,6 @@
 package cc.vileda.experiment.rxchain;
 
+import cc.vileda.experiment.common.aggregate.Aggregate;
 import cc.vileda.experiment.common.event.DistributedEvent;
 import cc.vileda.experiment.common.command.Command;
 import cc.vileda.experiment.common.event.Event;
@@ -87,8 +88,15 @@ public class EventStore {
 		return HEADER_TRUE.equals(headers.get(ERROR_HEADER));
 	}
 
-	public <T> MessageConsumer<T> consumer(String address, Handler<Message<T>> handler) {
-		return eventBus.consumer(address, handler);
+	public <T extends DistributedEvent> void consumer(Class<T> event, Handler<Message<String>> handler) {
+		try
+		{
+			eventBus.consumer(event.newInstance().getAddress(), handler);
+		}
+		catch (InstantiationException | IllegalAccessException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	public <T extends SourcedEvent> List<Event<T>> fetchEventsFor(Class<T> clazz) {
@@ -98,6 +106,28 @@ public class EventStore {
 				.filter(event -> event.getClazz().equals(clazz))
 				.forEach(events::add);
 		return events;
+	}
+
+	public <T extends Aggregate> T load(String id, Class<T> aggregateClass) {
+		readEventsFromFile();
+		T aggregate;
+		try
+		{
+			aggregate = aggregateClass.newInstance();
+			for (Event event : eventList) {
+				if(!(FailedEvent.class.isAssignableFrom(event.getClazz()))) {
+					final Class<? extends SourcedEvent> clazz = event.getClazz();
+					final SourcedEvent o = Json.decodeValue(event.getPayload(), clazz);
+					if(id.equals(o.getId()))
+						aggregate.apply(o);
+				}
+			}
+			return aggregate;
+		}
+		catch (InstantiationException | IllegalAccessException e)
+		{
+			return null;
+		}
 	}
 
 	public List<Event> getEventList()

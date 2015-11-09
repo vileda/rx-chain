@@ -1,17 +1,21 @@
 package cc.vileda.experiment.common.event;
 
+import lombok.Getter;
+
 import static cc.vileda.experiment.common.Globals.USER_CREATED_EVENT_ADDRESS;
 
-public class UserCreatedEvent extends SourcedEvent {
-	private final String userId;
+@Getter
+public class UserCreatedEvent extends SourcedEvent {;
+	private String name;
+	private String email;
 
-	public UserCreatedEvent(String userId) {
-		super(USER_CREATED_EVENT_ADDRESS);
-		this.userId = userId;
+	public UserCreatedEvent() {
+		super(USER_CREATED_EVENT_ADDRESS, null);
 	}
 
-	public String getUserId()
-	{
-		return userId;
+	public UserCreatedEvent(String id, String name, String email) {
+		super(USER_CREATED_EVENT_ADDRESS, id);
+		this.name = name;
+		this.email = email;
 	}
 }

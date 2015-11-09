@@ -8,7 +8,7 @@ import lombok.Setter;
 public class FailedEvent extends SourcedEvent {
 	private final String message;
 	public FailedEvent(String address, String message) {
-		super(address);
+		super(address, null);
 		this.message = message;
 	}
 }

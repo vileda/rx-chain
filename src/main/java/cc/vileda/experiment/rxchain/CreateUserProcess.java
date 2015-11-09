@@ -1,6 +1,7 @@
 package cc.vileda.experiment.rxchain;
 
 import cc.vileda.experiment.common.*;
+import cc.vileda.experiment.common.command.ChangeUserEmailCommand;
 import cc.vileda.experiment.common.command.CreateAddressCommand;
 import cc.vileda.experiment.common.command.CreateUserCommand;
 import cc.vileda.experiment.common.event.*;
@@ -29,22 +30,25 @@ public class CreateUserProcess {
 	public CreateUserProcess() { }
 
 	private void addCommandHandlers() {
-		eventStore.consumer(CREATE_USER_COMMAND_ADDRESS, message -> {
-			createUserPrechecks(Json.decodeValue((String) message.body(), CreateUserCommand.class))
+		eventStore.consumer(CreateUserCommand.class, message -> {
+			createUserPrechecks(Json.decodeValue(message.body(), CreateUserCommand.class))
 				.flatMap(this::createUserChain)
 				.onErrorResumeNext(throwable -> {
 					return publishFailedEvent(new CreatingUserFailedEvent(throwable.getMessage()), message);
 				})
 				.subscribe(user -> {
-					final UserCreatedEvent userCreatedEvent = new UserCreatedEvent(((User)user).getId());
+					final UserCreatedEvent userCreatedEvent = new UserCreatedEvent(
+							((User)user).getId(),
+							((User)user).getName(),
+							((User)user).getEmail()
+					);
 					eventStore.publish(userCreatedEvent, UserCreatedEvent.class);
 					message.reply(Json.encode(user));
 				});
 		});
 
-		eventStore.consumer(CREATE_ADDRESS_COMMAND_ADDRESS, message -> {
-			CreateAddressCommand newAddress = Json.decodeValue((String) message.body(), CreateAddressCommand.class);
-			createAddress(newAddress)
+		eventStore.consumer(CreateAddressCommand.class, message -> {
+			createAddress(Json.decodeValue(message.body(), CreateAddressCommand.class))
 				.onErrorResumeNext(throwable -> {
 					return publishFailedEvent(new CreatingAddressFailedEvent(throwable.getMessage()), message);
 				})
@@ -54,9 +58,16 @@ public class CreateUserProcess {
 					message.reply(Json.encode(address));
 				});
 		});
+
+		eventStore.consumer(ChangeUserEmailCommand.class, message -> {
+			ChangeUserEmailCommand newEmail = Json.decodeValue(message.body(), ChangeUserEmailCommand.class);
+			UserEmailChangedEvent emailChangedEvent = new UserEmailChangedEvent(newEmail.getId(), newEmail.getEmail());
+			eventStore.publish(emailChangedEvent, UserEmailChangedEvent.class);
+			message.reply(Json.encode(newEmail.getId()));
+		});
 	}
 
-	private <T extends FailedEvent> Observable publishFailedEvent(T event, Message<Object> message) {
+	private <T extends FailedEvent> Observable publishFailedEvent(T event, Message<?> message) {
 		eventStore.publish(event.getAddress(), event);
 		DeliveryOptions deliveryOptions = new DeliveryOptions();
 		deliveryOptions.addHeader(ERROR_HEADER, HEADER_TRUE);
@@ -65,17 +76,17 @@ public class CreateUserProcess {
 	}
 
 	private void addEventHandlers() {
-		eventStore.consumer(USER_CREATED_EVENT_ADDRESS, message -> {
+		eventStore.consumer(UserCreatedEvent.class, message -> {
 			System.out.println("I have received a message: " + message.body());
 		});
-		eventStore.consumer(CREATING_USER_FAILED_EVENT_ADDRESS, message -> {
+		eventStore.consumer(CreatingUserFailedEvent.class, message -> {
 			System.out.println("I have received a fail message: " + message.body());
 		});
 
-		eventStore.consumer(ADDRESS_CREATED_EVENT_ADDRESS, message -> {
+		eventStore.consumer(AddressCreatedEvent.class, message -> {
 			System.out.println("I have received a message: " + message.body());
 		});
-		eventStore.consumer(CREATING_ADDRESS_FAILED_EVENT_ADDRESS, message -> {
+		eventStore.consumer(CreatingAddressFailedEvent.class, message -> {
 			System.out.println("I have received a fail message: " + message.body());
 		});
 	}
