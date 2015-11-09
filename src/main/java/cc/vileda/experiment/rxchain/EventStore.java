@@ -74,11 +74,6 @@ public class EventStore {
 		}
 	}
 
-	public <T extends DistributedEvent> Observable<T> publish(String address, T message) {
-		eventBus.publish(address, Json.encode(message));
-		return Observable.never();
-	}
-
 	public <T extends FailedEvent> Observable<T> publish(String address, T message) {
 		eventBus.publish(address, Json.encode(message));
 		readEventsFromFile();
@@ -126,7 +121,7 @@ public class EventStore {
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			// left blank
 		}
 	}
 }

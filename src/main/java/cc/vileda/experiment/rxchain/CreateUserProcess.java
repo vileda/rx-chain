@@ -36,7 +36,7 @@ public class CreateUserProcess {
 					return publishFailedEvent(new CreatingUserFailedEvent(throwable.getMessage()), message);
 				})
 				.subscribe(user -> {
-					final UserCreatedEvent userCreatedEvent = new UserCreatedEvent("");
+					final UserCreatedEvent userCreatedEvent = new UserCreatedEvent(((User)user).getId());
 					eventStore.publish(userCreatedEvent, UserCreatedEvent.class);
 					message.reply(Json.encode(user));
 				});
@@ -49,7 +49,7 @@ public class CreateUserProcess {
 					return publishFailedEvent(new CreatingAddressFailedEvent(throwable.getMessage()), message);
 				})
 				.subscribe(address -> {
-					final AddressCreatedEvent addressCreatedEvent = new AddressCreatedEvent("");
+					final AddressCreatedEvent addressCreatedEvent = new AddressCreatedEvent(((Address)address).getId());
 					eventStore.publish(addressCreatedEvent, AddressCreatedEvent.class);
 					message.reply(Json.encode(address));
 				});
