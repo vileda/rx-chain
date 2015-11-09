@@ -83,6 +83,10 @@ public class CreateUserProcess {
 			System.out.println("I have received a fail message: " + message.body());
 		});
 
+		eventStore.consumer(UserEmailChangedEvent.class, message -> {
+			System.out.println("I have received a message: " + message.body());
+		});
+
 		eventStore.consumer(AddressCreatedEvent.class, message -> {
 			System.out.println("I have received a message: " + message.body());
 		});
