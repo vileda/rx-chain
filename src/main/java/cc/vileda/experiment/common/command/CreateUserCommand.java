@@ -1,5 +1,6 @@
 package cc.vileda.experiment.common.command;
 
+import cc.vileda.resx.command.Command;
 import lombok.Getter;
 import lombok.Setter;
 

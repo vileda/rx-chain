@@ -2,6 +2,7 @@ package cc.vileda.experiment.common.aggregate;
 
 import cc.vileda.experiment.common.event.UserCreatedEvent;
 import cc.vileda.experiment.common.event.UserEmailChangedEvent;
+import cc.vileda.resx.Aggregate;
 import lombok.Getter;
 import lombok.Setter;
 

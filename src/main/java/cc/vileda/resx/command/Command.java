@@ -1,6 +1,6 @@
-package cc.vileda.experiment.common.command;
+package cc.vileda.resx.command;
 
-import cc.vileda.experiment.common.event.DistributedEvent;
+import cc.vileda.resx.event.DistributedEvent;
 
 public class Command extends DistributedEvent
 {

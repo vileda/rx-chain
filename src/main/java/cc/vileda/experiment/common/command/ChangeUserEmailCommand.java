@@ -1,10 +1,10 @@
 package cc.vileda.experiment.common.command;
 
+import cc.vileda.resx.command.Command;
 import lombok.Getter;
 import lombok.Setter;
 
 import static cc.vileda.experiment.common.Globals.CHANGE_USER_EMAIL_COMMAND_ADDRESS;
-import static cc.vileda.experiment.common.Globals.CREATE_USER_COMMAND_ADDRESS;
 
 @Getter
 @Setter

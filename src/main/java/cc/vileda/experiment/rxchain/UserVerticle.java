@@ -1,5 +1,6 @@
 package cc.vileda.experiment.rxchain;
 
+import cc.vileda.resx.EventStore;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.eventbus.EventBus;
 

@@ -1,4 +1,4 @@
-package cc.vileda.experiment.common.event;
+package cc.vileda.resx.event;
 
 public class DistributedEvent
 {

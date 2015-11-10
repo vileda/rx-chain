@@ -1,5 +1,6 @@
 package cc.vileda.experiment.common.command;
 
+import cc.vileda.resx.command.Command;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -7,7 +8,8 @@ import static cc.vileda.experiment.common.Globals.CREATE_ADDRESS_COMMAND_ADDRESS
 
 @Getter
 @Setter
-public class CreateAddressCommand extends Command {
+public class CreateAddressCommand extends Command
+{
 	private String city;
 	private String zip;
 

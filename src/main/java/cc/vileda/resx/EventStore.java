@@ -1,11 +1,10 @@
-package cc.vileda.experiment.rxchain;
+package cc.vileda.resx;
 
-import cc.vileda.experiment.common.aggregate.Aggregate;
-import cc.vileda.experiment.common.command.Command;
-import cc.vileda.experiment.common.event.DistributedEvent;
-import cc.vileda.experiment.common.event.FailedEvent;
-import cc.vileda.experiment.common.event.PersistableEvent;
-import cc.vileda.experiment.common.event.SourcedEvent;
+import cc.vileda.resx.command.Command;
+import cc.vileda.resx.event.DistributedEvent;
+import cc.vileda.resx.event.FailedEvent;
+import cc.vileda.resx.event.PersistableEvent;
+import cc.vileda.resx.event.SourcedEvent;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;

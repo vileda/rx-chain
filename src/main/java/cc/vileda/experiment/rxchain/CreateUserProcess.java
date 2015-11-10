@@ -5,13 +5,13 @@ import cc.vileda.experiment.common.command.ChangeUserEmailCommand;
 import cc.vileda.experiment.common.command.CreateAddressCommand;
 import cc.vileda.experiment.common.command.CreateUserCommand;
 import cc.vileda.experiment.common.event.*;
+import cc.vileda.resx.EventStore;
+import cc.vileda.resx.event.FailedEvent;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.eventbus.Message;
 import lombok.extern.java.Log;
 import rx.Observable;
-
-import javax.print.attribute.standard.JobSheets;
 
 import static cc.vileda.experiment.common.Globals.*;
 

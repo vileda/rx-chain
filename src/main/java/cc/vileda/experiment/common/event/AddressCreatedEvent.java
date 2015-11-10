@@ -1,11 +1,13 @@
 package cc.vileda.experiment.common.event;
 
+import cc.vileda.resx.event.SourcedEvent;
 import lombok.Getter;
 
 import static cc.vileda.experiment.common.Globals.ADDRESS_CREATED_EVENT_ADDRESS;
 
 @Getter
-public class AddressCreatedEvent extends SourcedEvent {
+public class AddressCreatedEvent extends SourcedEvent
+{
 	public AddressCreatedEvent() {
 		super(ADDRESS_CREATED_EVENT_ADDRESS, null);
 	}

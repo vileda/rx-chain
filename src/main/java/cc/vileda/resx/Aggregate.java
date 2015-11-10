@@ -1,4 +1,4 @@
-package cc.vileda.experiment.common.aggregate;
+package cc.vileda.resx;
 
 import lombok.Getter;
 import lombok.Setter;
