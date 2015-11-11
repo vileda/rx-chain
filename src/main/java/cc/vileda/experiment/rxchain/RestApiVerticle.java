@@ -5,10 +5,11 @@ import cc.vileda.experiment.common.CreateUserRequest;
 import cc.vileda.experiment.common.User;
 import cc.vileda.experiment.common.aggregate.UserAggregate;
 import cc.vileda.experiment.common.command.ChangeUserEmailCommand;
+import cc.vileda.resx.EventStore;
 import cc.vileda.resx.command.Command;
 import cc.vileda.experiment.common.command.CreateAddressCommand;
 import cc.vileda.experiment.common.command.CreateUserCommand;
-import cc.vileda.resx.EventStore;
+import cc.vileda.resx.MongoEventStore;
 import io.vertx.core.json.Json;
 import io.vertx.rxjava.core.AbstractVerticle;
 import io.vertx.rxjava.core.eventbus.EventBus;
@@ -22,7 +23,7 @@ import rx.Observable;
 public class RestApiVerticle extends AbstractVerticle {
 	public void start() {
 		EventBus eventBus = vertx.eventBus();
-		EventStore eventStore = new EventStore(vertx, eventBus);
+		EventStore eventStore = new MongoEventStore(vertx, eventBus);
 
 		HttpServer server = vertx.createHttpServer();
 
