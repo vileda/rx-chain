@@ -100,23 +100,23 @@ public class MongoEventStore implements EventStore
 		catch (InstantiationException | IllegalAccessException e) { return Observable.error(e); }
 	}
 
-	@Override public Observable<List<PersistableEvent>> getPersistableEventList()
+	@Override public Observable<List<PersistableEvent<? extends SourcedEvent>>> getPersistableEventList()
 	{
 		return mongoClient.findObservable("events", new JsonObject())
 				.map(jsonObjects -> {
-					List<PersistableEvent> events = new ArrayList<>();
+					List<PersistableEvent<? extends SourcedEvent>> events = new ArrayList<>();
 					for (JsonObject event : jsonObjects) {
 						try {
-							Class<?> clazz = Class.forName(event.getString("clazz"));
-							PersistableEvent payload = new PersistableEvent<>(clazz, event.getJsonObject("payload").encode());
-							events.add(payload);
+							Class<? extends SourcedEvent> clazz = (Class<? extends SourcedEvent>) Class.forName(event.getString("clazz"));
+							PersistableEvent<? extends SourcedEvent> persistableEvent = new PersistableEvent<>(clazz, event.getJsonObject("payload").encode());
+							events.add(persistableEvent);
 						} catch (ClassNotFoundException ignored) { }
 					}
 					return events;
 				});
 	}
 
-	private <T extends PersistableEvent> Observable<String> insert(T event) {
+	private <T extends PersistableEvent<? extends SourcedEvent>> Observable<String> insert(T event) {
 		JsonObject document = new JsonObject();
 		document.put("_id", event.getId());
 		document.put("clazz", event.getClazz().getCanonicalName());

@@ -5,7 +5,7 @@ import lombok.Setter;
 import java.util.UUID;
 
 @Setter
-public class PersistableEvent<T> {
+public class PersistableEvent<T extends SourcedEvent> {
 	private String id;
 	private Class<T> clazz;
 	private String payload;
