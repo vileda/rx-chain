@@ -107,6 +107,7 @@ public class MongoEventStore implements EventStore
 					List<PersistableEvent<? extends SourcedEvent>> events = new ArrayList<>();
 					for (JsonObject event : jsonObjects) {
 						try {
+							//noinspection unchecked
 							Class<? extends SourcedEvent> clazz = (Class<? extends SourcedEvent>) Class.forName(event.getString("clazz"));
 							PersistableEvent<? extends SourcedEvent> persistableEvent = new PersistableEvent<>(clazz, event.getJsonObject("payload").encode());
 							events.add(persistableEvent);
