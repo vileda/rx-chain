@@ -84,7 +84,10 @@ public class MongoEventStore implements EventStore
 			T aggregate;
 			aggregate = aggregateClass.newInstance();
 
-			return getPersistableEventList().flatMap(persistableEvents -> {
+			JsonObject query = new JsonObject();
+			query.put("payload.id", id);
+
+			return getPersistableEventList(query).flatMap(persistableEvents -> {
 				persistableEvents.stream()
 						.filter(event -> !(FailedEvent.class.isAssignableFrom(event.getClazz())))
 						.forEach(event -> {
@@ -102,19 +105,7 @@ public class MongoEventStore implements EventStore
 
 	@Override public Observable<List<PersistableEvent<? extends SourcedEvent>>> getPersistableEventList()
 	{
-		return mongoClient.findObservable("events", new JsonObject())
-				.map(jsonObjects -> {
-					List<PersistableEvent<? extends SourcedEvent>> events = new ArrayList<>();
-					for (JsonObject event : jsonObjects) {
-						try {
-							//noinspection unchecked
-							Class<? extends SourcedEvent> clazz = (Class<? extends SourcedEvent>) Class.forName(event.getString("clazz"));
-							PersistableEvent<? extends SourcedEvent> persistableEvent = new PersistableEvent<>(clazz, event.getJsonObject("payload").encode());
-							events.add(persistableEvent);
-						} catch (ClassNotFoundException ignored) { }
-					}
-					return events;
-				});
+		return getPersistableEventList(new JsonObject());
 	}
 
 	public Observable<List<PersistableEvent<? extends SourcedEvent>>> getPersistableEventList(JsonObject query)
@@ -124,18 +115,23 @@ public class MongoEventStore implements EventStore
 					List<PersistableEvent<? extends SourcedEvent>> events = new ArrayList<>();
 					for (JsonObject event : jsonObjects) {
 						try {
-							//noinspection unchecked
-							Class<? extends SourcedEvent> clazz = (Class<? extends SourcedEvent>) Class.forName(event.getString("clazz"));
-							PersistableEvent<? extends SourcedEvent> persistableEvent = new PersistableEvent<>(clazz, event.getJsonObject("payload").encode());
-							events.add(persistableEvent);
+							events.add(makePersistableEventFromJson(event));
 						} catch (ClassNotFoundException ignored) { }
 					}
 					return events;
 				});
 	}
 
-	private <T extends PersistableEvent<? extends SourcedEvent>> Observable<String> insert(T event) {
+	private PersistableEvent<? extends SourcedEvent> makePersistableEventFromJson(JsonObject event) throws ClassNotFoundException {
+		//noinspection unchecked
+		Class<? extends SourcedEvent> clazz
+				= (Class<? extends SourcedEvent>) Class.forName(event.getString("clazz"));
+		return new PersistableEvent<>(clazz, event.getJsonObject("payload").encode());
+	}
+
+	public <T extends PersistableEvent<? extends SourcedEvent>> Observable<String> insert(T event) {
 		JsonObject document = new JsonObject();
+		document.put("_id", event.getId());
 		document.put("clazz", event.getClazz().getCanonicalName());
 		document.put("payload", new JsonObject(event.getPayload()));
 		return mongoClient.insertObservable("events", document);

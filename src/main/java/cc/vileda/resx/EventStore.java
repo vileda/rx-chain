@@ -28,4 +28,6 @@ public interface EventStore
 	<T extends Aggregate> Observable<T> load(String id, Class<T> aggregateClass);
 
 	Observable<List<PersistableEvent<? extends SourcedEvent>>> getPersistableEventList();
+
+	<T extends PersistableEvent<? extends SourcedEvent>> Observable<String> insert(T event);
 }
