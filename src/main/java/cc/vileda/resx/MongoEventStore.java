@@ -117,9 +117,25 @@ public class MongoEventStore implements EventStore
 				});
 	}
 
+	public Observable<List<PersistableEvent<? extends SourcedEvent>>> getPersistableEventList(JsonObject query)
+	{
+		return mongoClient.findObservable("events", query)
+				.map(jsonObjects -> {
+					List<PersistableEvent<? extends SourcedEvent>> events = new ArrayList<>();
+					for (JsonObject event : jsonObjects) {
+						try {
+							//noinspection unchecked
+							Class<? extends SourcedEvent> clazz = (Class<? extends SourcedEvent>) Class.forName(event.getString("clazz"));
+							PersistableEvent<? extends SourcedEvent> persistableEvent = new PersistableEvent<>(clazz, event.getJsonObject("payload").encode());
+							events.add(persistableEvent);
+						} catch (ClassNotFoundException ignored) { }
+					}
+					return events;
+				});
+	}
+
 	private <T extends PersistableEvent<? extends SourcedEvent>> Observable<String> insert(T event) {
 		JsonObject document = new JsonObject();
-		document.put("_id", event.getId());
 		document.put("clazz", event.getClazz().getCanonicalName());
 		document.put("payload", new JsonObject(event.getPayload()));
 		return mongoClient.insertObservable("events", document);
